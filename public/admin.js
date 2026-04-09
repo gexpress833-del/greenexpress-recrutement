@@ -4,6 +4,7 @@ const ADMIN_JWT_KEY = 'gx_admin_jwt';
 let adminApplications = [];
 let adminPdfDetailId = null;
 let adminFormGateSyncing = false;
+let adminDeleteInProgress = false;
 
 function getAdminToken() {
     return sessionStorage.getItem(ADMIN_JWT_KEY);
@@ -248,6 +249,94 @@ function hideAdminDetail() {
     document.getElementById('adminDetail')?.classList.add('hidden');
 }
 
+function getAdminDeleteDialogEls() {
+    return {
+        dialog: document.getElementById('adminDeleteDialog'),
+        candidate: document.getElementById('adminDeleteDialogCandidate'),
+        err: document.getElementById('adminDeleteDialogError'),
+        confirmBtn: document.getElementById('adminDeleteConfirmBtn'),
+        cancelBtn: document.getElementById('adminDeleteCancelBtn'),
+    };
+}
+
+function openAdminDeleteDialog() {
+    const id = adminPdfDetailId;
+    if (!id) return;
+    const item = adminApplications.find((s) => `${s.id}` === `${id}`);
+    const name = item?.full_name || item?.fullName || 'Candidat';
+    const { dialog, candidate, err, confirmBtn, cancelBtn } = getAdminDeleteDialogEls();
+    if (!dialog) return;
+    if (candidate) {
+        candidate.textContent = `Candidature concernée : ${name} (n°${id}).`;
+    }
+    if (err) {
+        err.textContent = '';
+        err.classList.add('hidden');
+    }
+    if (confirmBtn) confirmBtn.disabled = false;
+    if (cancelBtn) cancelBtn.disabled = false;
+    if (typeof dialog.showModal === 'function') {
+        dialog.showModal();
+    }
+}
+
+function closeAdminDeleteDialog() {
+    const { dialog } = getAdminDeleteDialogEls();
+    if (dialog && typeof dialog.close === 'function') dialog.close();
+}
+
+async function confirmAdminDeleteApplication() {
+    const id = adminPdfDetailId;
+    if (!id || adminDeleteInProgress) return;
+    const token = getAdminToken();
+    if (!token) {
+        closeAdminDeleteDialog();
+        showLoginScreen();
+        return;
+    }
+    const { err, confirmBtn, cancelBtn } = getAdminDeleteDialogEls();
+    if (err) {
+        err.textContent = '';
+        err.classList.add('hidden');
+    }
+    adminDeleteInProgress = true;
+    if (confirmBtn) confirmBtn.disabled = true;
+    if (cancelBtn) cancelBtn.disabled = true;
+    try {
+        const res = await fetch(`${API_BASE}/api/applications/${encodeURIComponent(id)}`, {
+            method: 'DELETE',
+            headers: { ...adminAuthHeaders() },
+        });
+        const j = await res.json().catch(() => ({}));
+        if (res.status === 401) {
+            sessionStorage.removeItem(ADMIN_JWT_KEY);
+            closeAdminDeleteDialog();
+            showLoginScreen();
+            return;
+        }
+        if (!res.ok) {
+            if (err) {
+                err.textContent = j.error || 'La suppression a échoué. Réessayez.';
+                err.classList.remove('hidden');
+            }
+            return;
+        }
+        closeAdminDeleteDialog();
+        hideAdminDetail();
+        await loadApplications();
+    } catch (e) {
+        console.error('confirmAdminDeleteApplication', e);
+        if (err) {
+            err.textContent = 'Erreur réseau. Vérifiez la connexion et réessayez.';
+            err.classList.remove('hidden');
+        }
+    } finally {
+        adminDeleteInProgress = false;
+        if (confirmBtn) confirmBtn.disabled = false;
+        if (cancelBtn) cancelBtn.disabled = false;
+    }
+}
+
 async function exportAdminPdf() {
     const id = adminPdfDetailId;
     if (!id) return;
@@ -371,6 +460,7 @@ async function fetchApplications() {
 window.logoutAdmin = logoutAdmin;
 window.hideAdminDetail = hideAdminDetail;
 window.exportAdminPdf = exportAdminPdf;
+window.openAdminDeleteDialog = openAdminDeleteDialog;
 
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
@@ -397,6 +487,27 @@ document.addEventListener('DOMContentLoaded', () => {
         gateToggle.addEventListener('change', (e) => {
             if (adminFormGateSyncing) return;
             commitFormGate(Boolean(e.target.checked));
+        });
+    }
+
+    const { dialog: delDialog, confirmBtn: delConfirm, cancelBtn: delCancel } =
+        getAdminDeleteDialogEls();
+    if (delCancel) {
+        delCancel.addEventListener('click', () => closeAdminDeleteDialog());
+    }
+    if (delConfirm) {
+        delConfirm.addEventListener('click', () => confirmAdminDeleteApplication());
+    }
+    if (delDialog) {
+        delDialog.addEventListener('close', () => {
+            adminDeleteInProgress = false;
+            const { err, confirmBtn, cancelBtn } = getAdminDeleteDialogEls();
+            if (err) {
+                err.textContent = '';
+                err.classList.add('hidden');
+            }
+            if (confirmBtn) confirmBtn.disabled = false;
+            if (cancelBtn) cancelBtn.disabled = false;
         });
     }
 

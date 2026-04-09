@@ -1312,6 +1312,115 @@ body.gx-page #recruitmentForm textarea {
     font-size: 0.875rem;
 }
 
+.admin-detail-delete-btn {
+    font-size: 0.875rem;
+}
+
+/* Bouton action destructive (admin) */
+.gx-btn-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid rgba(248, 113, 113, 0.55);
+    color: #fecaca;
+    background: rgba(127, 29, 29, 0.35);
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.gx-btn-danger:hover {
+    background: rgba(153, 27, 27, 0.5);
+    border-color: rgba(252, 165, 165, 0.7);
+    color: #fff;
+}
+
+.gx-btn-danger:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.gx-btn-danger--solid {
+    border-color: #dc2626;
+    background: #b91c1c;
+    color: #fff;
+}
+
+.gx-btn-danger--solid:hover:not(:disabled) {
+    background: #991b1b;
+    border-color: #ef4444;
+}
+
+/* Modale suppression candidature */
+.admin-delete-dialog {
+    padding: 0;
+    border: none;
+    background: transparent;
+    max-width: calc(100vw - 1.5rem);
+}
+
+.admin-delete-dialog::backdrop {
+    background: rgba(3, 7, 18, 0.72);
+    backdrop-filter: blur(4px);
+}
+
+.admin-delete-dialog__panel {
+    width: min(26rem, 100%);
+    padding: 1.35rem 1.25rem 1.25rem;
+    border-radius: 1rem;
+    border: 1px solid rgba(248, 113, 113, 0.35);
+    background: linear-gradient(160deg, rgba(30, 20, 25, 0.98), rgba(15, 23, 42, 0.98));
+    box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.45);
+    color: #e2e8f0;
+}
+
+.admin-delete-dialog__title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0 0 0.75rem;
+    color: #fecaca;
+    line-height: 1.3;
+}
+
+.admin-delete-dialog__warn {
+    margin: 0 0 0.75rem;
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: #f1f5f9;
+}
+
+.admin-delete-dialog__warn strong {
+    color: #fca5a5;
+}
+
+.admin-delete-dialog__candidate {
+    margin: 0 0 1rem;
+    font-size: 0.875rem;
+}
+
+.admin-delete-dialog__error {
+    margin: 0 0 0.75rem;
+    font-size: 0.8125rem;
+    color: #fecaca;
+}
+
+.admin-delete-dialog__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+@media (max-width: 639px) {
+    .admin-detail-buttons .gx-btn-danger {
+        flex: 1 1 auto;
+        min-width: min(100%, 10rem);
+    }
+}
+
 /* Images détail candidat (remplace utilitaires Tailwind dans admin.js) */
 .gx-detail-img {
     display: block;

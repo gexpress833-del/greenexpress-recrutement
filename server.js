@@ -311,6 +311,33 @@ function rowToClient(row) {
   };
 }
 
+/** Supprime un fichier sous uploads/ à partir d’un chemin relatif stocké en base (ex. applications/…). */
+function safeUnlinkStoredUpload(rel) {
+  if (!rel || typeof rel !== 'string') return;
+  const norm = rel.replace(/\\/g, '/').replace(/^\/+/, '');
+  if (norm.includes('..')) return;
+  if (!norm.startsWith('applications/')) return;
+  const abs = path.resolve(UPLOAD_ROOT, norm);
+  const root = path.resolve(UPLOAD_ROOT);
+  if (abs !== root && !abs.startsWith(root + path.sep)) return;
+  try {
+    fs.unlinkSync(abs);
+  } catch (e) {
+    if (e.code !== 'ENOENT') console.error('unlink upload', abs, e.message);
+  }
+}
+
+function unlinkApplicationRowFiles(row) {
+  if (!row) return;
+  [
+    row.postulant_photo_path,
+    row.card_recto_path,
+    row.card_verso_path,
+    row.cv_path,
+    row.transport_photo_path,
+  ].forEach(safeUnlinkStoredUpload);
+}
+
 app.get('/api/applications', authAdmin, async (_req, res) => {
   try {
     const { rows } = await pool.query(
@@ -320,6 +347,26 @@ app.get('/api/applications', authAdmin, async (_req, res) => {
   } catch (err) {
     console.error('list applications', err);
     res.status(500).json({ error: 'Impossible de lister les candidatures' });
+  }
+});
+
+app.delete('/api/applications/:id', authAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id) || id < 1) {
+    return res.status(400).json({ error: 'ID invalide' });
+  }
+  try {
+    const { rows } = await pool.query('SELECT * FROM applications WHERE id = $1 LIMIT 1', [id]);
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Candidature introuvable' });
+    }
+    const row = rows[0];
+    await pool.query('DELETE FROM applications WHERE id = $1', [id]);
+    unlinkApplicationRowFiles(row);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('delete application', err);
+    res.status(500).json({ error: 'Impossible de supprimer la candidature' });
   }
 });
 
