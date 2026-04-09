@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#030712">
+    <title>Formulaire de Recrutement - Green Express</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body class="gx-page min-h-screen">
+    <div class="gx-blob-layer" aria-hidden="true">
+        <div class="gx-blob gx-blob--cyan"></div>
+        <div class="gx-blob gx-blob--magenta"></div>
+        <div class="gx-blob gx-blob--violet"></div>
+    </div>
+
+    <div class="relative z-10 gx-main-shell">
+        <!-- Header -->
+        <header class="glass-nav text-white py-5 md:py-6">
+            <div class="gx-container flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div class="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                    <img src="/logo.png" alt="Green Express Logo" class="w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 object-contain drop-shadow-lg">
+                    <div class="min-w-0">
+                        <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold gx-nav-title font-heading gx-header-title">Green Express</h1>
+                        <p class="text-sm md:text-base gx-text-muted gx-header-tagline">Rejoignez notre équipe — rapide, sain et délicieux</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto md:flex-shrink-0">
+                    <a href="/admin.html" class="gx-btn-gold">Espace Admin</a>
+                    <button type="button" onclick="window.scrollTo({ top: 0, behavior: 'smooth' });" class="gx-btn-ghost">Haut</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Formulaire -->
+        <div class="gx-container py-8 md:py-12">
+            <div class="mb-8 gx-intro-banner px-5 py-4">
+                <p class="font-semibold text-white font-heading">Candidature en ligne</p>
+                <p class="text-sm gx-text-muted mt-1">Environ <strong>10 à 15 minutes</strong>, selon les réponses. Les champs marqués <strong>*</strong> sont obligatoires. Vous pouvez revenir en arrière à tout moment.</p>
+                <p class="text-xs gx-text-soft mt-2">Les pièces (photo, carte d’électeur) sont enregistrées de façon sécurisée sur le serveur — formats image courants, <strong>8 Mo maximum</strong> par fichier.</p>
+            </div>
+
+            <nav class="form-step-nav mb-10" aria-label="Étapes du formulaire">
+                <a href="#form-step-1" class="form-step-nav__link">1. Coordonnées</a>
+                <a href="#form-step-2" class="form-step-nav__link">2. Poste &amp; horaires</a>
+                <a href="#form-step-3" class="form-step-nav__link">3. Parcours</a>
+                <a href="#form-step-4" class="form-step-nav__link">4. Documents</a>
+            </nav>
+
+            <form id="recruitmentForm" class="space-y-8 gx-form-root">
+                <!-- Section 1: Informations personnelles -->
+                <div id="form-step-1" class="form-step-anchor bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 border border-white/20 shadow-2xl  transition-all duration-300">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6 gx-card-top min-w-0">
+                        <div class="flex items-center gx-section-head">
+                            <span class="text-2xl sm:text-3xl mr-2 sm:mr-3 flex-shrink-0" aria-hidden="true">🧍</span>
+                            <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-white min-w-0">Vos coordonnées</h2>
+                        </div>
+                        <span class="gx-step-badge">Étape 1 sur 4</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="form-group">
+                            <label for="fullName" class="block text-white font-semibold mb-2">Nom et prénom *</label>
+                            <input id="fullName" type="text" name="fullName" required placeholder="Entrez votre nom complet" class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:outline-none transition-all duration-300">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="age" class="block text-white font-semibold mb-2">Âge *</label>
+                            <input id="age" type="number" name="age" required min="18" max="100" placeholder="18" class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:outline-none transition-all duration-300">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="gender" class="block text-white font-semibold mb-2">Sexe *</label>
+                            <select id="gender" name="gender" required class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/30 text-white focus:outline-none focus:outline-none transition-all duration-300">
+                                <option value="">Sélectionnez...</option>
+                                <option value="homme">Homme</option>
+                                <option value="femme">Femme</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="address" class="block text-white font-semibold mb-2">Adresse complète *</label>
+                            <input id="address" type="text" name="address" required placeholder="Votre adresse" class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:outline-none transition-all duration-300">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="whatsapp" class="block text-white font-semibold mb-2">Numéro WhatsApp *</label>
+                            <input id="whatsapp" type="tel" name="whatsapp" required placeholder="+243..." class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:outline-none transition-all duration-300">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email" class="block text-white font-semibold mb-2">Adresse e-mail *</label>
+                            <input id="email" type="email" name="email" required placeholder="votre@email.com" class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:outline-none transition-all duration-300">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="form-step-2" class="form-step-anchor space-y-8 scroll-mt-24">
+                <!-- Section 2: Poste souhaité -->
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 border border-white/20 shadow-2xl  transition-all duration-300">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6 gx-card-top min-w-0">
+                        <div class="flex items-center gx-section-head">
+                            <span class="text-2xl sm:text-3xl mr-2 sm:mr-3 flex-shrink-0" aria-hidden="true">🚴</span>
+                            <h2 id="positionsTitle" class="text-xl sm:text-2xl md:text-3xl font-bold text-white min-w-0">Poste souhaité</h2>
+                        </div>
+                        <span class="gx-step-badge">Étape 2 sur 4</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 gx-poste-grid" role="group" aria-labelledby="positionsTitle" aria-required="true">
+                        <label class="checkbox-group">
+                            <input type="checkbox" name="position" value="livreur" class="checkbox-input" aria-required="true">
+                            <span class="checkbox-label">🚲 Livreur</span>
+                        </label>
+                        <label class="checkbox-group">
+                            <input type="checkbox" name="position" value="cuisinier" class="checkbox-input" aria-required="true">
+                            <span class="checkbox-label">👨‍🍳 Cuisinier</span>
+                        </label>
+                        <label class="checkbox-group">
+                            <input type="checkbox" name="position" value="agent_service" class="checkbox-input" aria-required="true">
+                            <span class="checkbox-label">🤝 Agent de service</span>
+                        </label>
+                        <label class="checkbox-group">
+                            <input type="checkbox" name="position" value="gestionnaire" class="checkbox-input" aria-required="true">
+                            <span class="checkbox-label">📋 Gestionnaire de commande</span>
+                        </label>
+                        <label class="checkbox-group">
+                            <input type="checkbox" name="position" value="community_manager" class="checkbox-input" aria-required="true">
+                            <span class="checkbox-label">📱 Community manager</span>
+                        </label>
+                        <label class="checkbox-group">
+                            <input type="checkbox" name="position" value="autre" class="checkbox-input" aria-required="true">
+                            <span class="checkbox-label">➕ Autre</span>
+                        </label>
+                    </div>
+
+                    <p id="positionsError" class="field-error hidden" aria-live="polite"></p>
+
+                    <div id="autrePoste" class="mt-4 hidden">
+                        <label for="autrePosteText" class="sr-only">Autre poste</label>
+                        <input id="autrePosteText" type="text" name="autrePosteText" placeholder="Précisez le poste" class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:outline-none transition-all duration-300">
+                    </div>
+                </div>
+
+                <!-- Section 3: Disponibilités -->
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 border border-white/20 shadow-2xl  transition-all duration-300">
+                    <div class="flex items-center gx-section-head mb-6">
+                        <span class="text-2xl sm:text-3xl mr-2 sm:mr-3 flex-shrink-0" aria-hidden="true">📅</span>
+                        <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-white min-w-0">Disponibilités</h2>
+                    </div>
+
+                    <!-- Information sur les horaires de Green Express -->
+                    <div class="rounded-xl p-4 mb-6 gx-intro-banner gx-narrow-banner">
+                        <div class="flex items-start gap-3 min-w-0">
+                            <span class="text-xl sm:text-2xl flex-shrink-0">⏰</span>
+                            <div class="min-w-0">
+                                <p class="text-cyan-300 font-bold mb-1 font-heading">Horaires de Green Express</p>
+                                <p class="text-white">Lundi - Vendredi : <span class="font-bold gradient-text">08h30 - 15h00</span></p>
+                                <p class="text-gray-300 text-sm mt-2">Vous devez être disponible pendant ces heures pour rejoindre notre équipe.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-white font-semibold mb-4">Êtes-vous disponible ces horaires ? *</label>
+                            <div class="gx-radio-row">
+                                <label class="radio-group">
+                                    <input id="availabilityFull" type="radio" name="availability" value="fulltime" required>
+                                    <span class="radio-label">✅ Oui, je suis disponible</span>
+                                </label>
+                                <label class="radio-group">
+                                    <input id="availabilityPartial" type="radio" name="availability" value="parttime" required>
+                                    <span class="radio-label">⚠️ Partiellement disponible</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-white font-semibold mb-4">Vous êtes disponible le... *</label>
+                            <div class="grid grid-cols-2 md:grid-cols-5 gap-3 gx-days-grid">
+                                <label class="checkbox-group">
+                                    <input type="checkbox" name="days" value="lundi" class="checkbox-input">
+                                    <span class="checkbox-label">Lundi</span>
+                                </label>
+                                <label class="checkbox-group">
+                                    <input type="checkbox" name="days" value="mardi" class="checkbox-input">
+                                    <span class="checkbox-label">Mardi</span>
+                                </label>
+                                <label class="checkbox-group">
+                                    <input type="checkbox" name="days" value="mercredi" class="checkbox-input">
+                                    <span class="checkbox-label">Mercredi</span>
+                                </label>
+                                <label class="checkbox-group">
+                                    <input type="checkbox" name="days" value="jeudi" class="checkbox-input">
+                                    <span class="checkbox-label">Jeudi</span>
+                                </label>
+                                <label class="checkbox-group">
+                                    <input type="checkbox" name="days" value="vendredi" class="checkbox-input">
+                                    <span class="checkbox-label">Vendredi</span>
+                                </label>
+                            </div>
+                            <p id="daysError" class="field-error hidden" aria-live="polite"></p>
+                        </div>
+
+                        <div>
+                            <label class="block text-white font-semibold mb-4">Avez-vous un autre emploi ? *</label>
+                            <div class="gx-radio-row">
+                                <label class="radio-group">
+                                    <input type="radio" name="otherJob" value="oui" required>
+                                    <span class="radio-label">✅ Oui</span>
+                                </label>
+                                <label class="radio-group">
+                                    <input type="radio" name="otherJob" value="non" required>
+                                    <span class="radio-label">❌ Non</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                </div>
+
+                <div id="form-step-3" class="form-step-anchor space-y-8 scroll-mt-24">
+                <!-- Section 4: Expérience & compétences -->
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 border border-white/20 shadow-2xl  transition-all duration-300">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6 gx-card-top min-w-0">
+                        <div class="flex items-center gx-section-head">
+                            <span class="text-2xl sm:text-3xl mr-2 sm:mr-3 flex-shrink-0" aria-hidden="true">💪</span>
+                            <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-white min-w-0">Expérience &amp; compétences</h2>
+                        </div>
+                        <span class="gx-step-badge">Étape 3 sur 4</span>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-white font-semibold mb-4">Avez-vous une expérience dans ce domaine ? *</label>
+                            <div class="gx-radio-row">
+                                <label class="radio-group">
+                                    <input type="radio" name="experience" value="oui" required>
+                                    <span class="radio-label">Oui</span>
+                                </label>
+                                <label class="radio-group">
+                                    <input type="radio" name="experience" value="non" required>
+                                    <span class="radio-label">Non</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="experienceDetails" class="hidden space-y-4">
+                            <div class="form-group">
+                                <label for="experienceDetailsField" class="block text-white font-semibold mb-2">Où et pendant combien de temps ?</label>
+                                <textarea id="experienceDetailsField" name="experienceDetails" placeholder="Décrivez votre expérience..." class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:outline-none transition-all duration-300 resize-none" rows="3"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="skills" class="block text-white font-semibold mb-2">Vos principales compétences *</label>
+                            <textarea id="skills" name="skills" required placeholder="ex: ponctualité, sens du service, rapidité..." class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:outline-none transition-all duration-300 resize-none" rows="3"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-white font-semibold mb-4">Savez-vous utiliser un smartphone ou un ordinateur ? *</label>
+                            <div class="gx-radio-row">
+                                <label class="radio-group">
+                                    <input id="smartphoneYes" type="radio" name="smartphone" value="oui" required>
+                                    <span class="radio-label">✅ Oui</span>
+                                </label>
+                                <label class="radio-group">
+                                    <input id="smartphoneNo" type="radio" name="smartphone" value="non" required>
+                                    <span class="radio-label">❌ Non</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="block text-white font-semibold mb-2">Langues parlées</label>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 gx-checkbox-grid">
+                                <label class="checkbox-group">
+                                    <input type="checkbox" name="languages" value="francais">
+                                    <span class="checkbox-label">🇫🇷 Français</span>
+                                </label>
+                                <label class="checkbox-group">
+                                    <input type="checkbox" name="languages" value="lingala">
+                                    <span class="checkbox-label">Lingala</span>
+                                </label>
+                                <label class="checkbox-group">
+                                    <input type="checkbox" name="languages" value="anglais">
+                                    <span class="checkbox-label">🇬🇧 Anglais</span>
+                                </label>
+                                <label class="checkbox-group">
+                                    <input type="checkbox" name="languages" value="swahili">
+                                    <span class="checkbox-label">Swahili</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 5: Pour les livreurs -->
+                <div id="deliverySection" class="hidden bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 border border-white/20 shadow-2xl  transition-all duration-300">
+                    <div class="flex items-center gx-section-head mb-4">
+                        <span class="text-2xl sm:text-3xl mr-2 sm:mr-3 flex-shrink-0" aria-hidden="true">🚲</span>
+                        <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-white min-w-0">Si vous postulez comme livreur</h2>
+                    </div>
+                    <p class="gx-text-muted text-sm mb-6">Cette partie s’affiche uniquement si vous cochez « Livreur ». Merci de la compléter pour que nous puissions traiter votre dossier.</p>
+
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-white font-semibold mb-4">Possédez-vous une moto ou un vélo ? *</label>
+                            <div class="gx-radio-row">
+                                <label class="radio-group">
+                                    <input id="transportMoto" type="radio" name="transport" value="moto">
+                                    <span class="radio-label">🏍️ Moto</span>
+                                </label>
+                                <label class="radio-group">
+                                    <input id="transportVelo" type="radio" name="transport" value="velo">
+                                    <span class="radio-label">🚲 Vélo</span>
+                                </label>
+                                <label class="radio-group">
+                                    <input id="transportAucun" type="radio" name="transport" value="aucun">
+                                    <span class="radio-label">❌ Aucun</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-white font-semibold mb-4">Avez-vous un permis valide ? *</label>
+                            <div class="gx-radio-row">
+                                <label class="radio-group">
+                                    <input id="licenseYes" type="radio" name="license" value="oui">
+                                    <span class="radio-label">✅ Oui</span>
+                                </label>
+                                <label class="radio-group">
+                                    <input id="licenseNo" type="radio" name="license" value="non">
+                                    <span class="radio-label">❌ Non</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-white font-semibold mb-4">Prêt à travailler dans toutes conditions ? *</label>
+                            <div class="gx-radio-row">
+                                <label class="radio-group">
+                                    <input id="weatherYes" type="radio" name="weather" value="oui">
+                                    <span class="radio-label">✅ Oui</span>
+                                </label>
+                                <label class="radio-group">
+                                    <input id="weatherNo" type="radio" name="weather" value="non">
+                                    <span class="radio-label">❌ Non</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="deliveryZone" class="block text-white font-semibold mb-2">Zone de livraison préférée *</label>
+                            <input id="deliveryZone" type="text" name="deliveryZone" placeholder="Quartier ou commune" class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:outline-none transition-all duration-300">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 6: Motivation -->
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 border border-white/20 shadow-2xl  transition-all duration-300">
+                    <div class="flex items-center gx-section-head mb-6">
+                        <span class="text-2xl sm:text-3xl mr-2 sm:mr-3 flex-shrink-0" aria-hidden="true">💬</span>
+                        <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-white min-w-0">Motivation &amp; valeurs</h2>
+                    </div>
+                    <p class="gx-text-muted text-sm mb-6">Quelques phrases suffisent ; restez authentique.</p>
+
+                    <div class="space-y-6">
+                        <!-- Question 1 -->
+                        <div class="form-group">
+                            <div class="flex items-start gap-3 mb-3">
+                                <span class="text-xl">❓</span>
+                                <div>
+                                    <label for="motivation" class="block text-white font-semibold">Pourquoi souhaitez-vous travailler chez Green Express ? *</label>
+                                    <p class="gx-text-soft text-sm mt-1">Aidez-nous à comprendre vos motivations personnelles</p>
+                                </div>
+                            </div>
+                            <textarea id="motivation" name="motivation" required placeholder="Ex: J'aime le service rapide et de qualité..." class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:outline-none transition-all duration-300 resize-none" rows="3"></textarea>
+                        </div>
+
+                        <!-- Question 2 -->
+                        <div class="form-group">
+                            <div class="flex items-start gap-3 mb-3">
+                                <span class="text-xl">📢</span>
+                                <div>
+                                    <label for="discovery" class="block text-white font-semibold">Comment avez-vous connu Green Express ? *</label>
+                                    <p class="gx-text-soft text-sm mt-1">Dites-nous le canal de communication (ami, réseau social, etc.)</p>
+                                </div>
+                            </div>
+                            <input id="discovery" type="text" name="discovery" required placeholder="Ex: Un ami, Facebook, Google, publicité..." class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:outline-none transition-all duration-300">
+                        </div>
+
+                        <!-- Question 3 -->
+                        <div class="form-group">
+                            <div class="flex items-start gap-3 mb-3">
+                                <span class="text-xl">🎯</span>
+                                <div>
+                                    <label for="motto" class="block text-white font-semibold">"Rapide, sain et délicieux" pour vous ? *</label>
+                                    <p class="gx-text-soft text-sm mt-1">Montrez que vous comprenez nos valeurs de marque</p>
+                                </div>
+                            </div>
+                            <textarea id="motto" name="motto" required placeholder="Ex: C'est livrer rapidement une nourriture saine et savoureuse..." class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:outline-none transition-all duration-300 resize-none" rows="3"></textarea>
+                        </div>
+
+                        <!-- Question 4 -->
+                        <div class="form-group">
+                            <div class="flex items-start gap-3 mb-3">
+                                <span class="text-xl">😊</span>
+                                <div>
+                                    <label for="clientService" class="block text-white font-semibold">Face à un client mécontent ? *</label>
+                                    <p class="gx-text-soft text-sm mt-1">Montrez votre empathie et professionnalisme</p>
+                                </div>
+                            </div>
+                            <textarea id="clientService" name="clientService" required placeholder="Ex: J'écouterais ses préoccupations et chercherais une solution..." class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:outline-none transition-all duration-300 resize-none" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                </div>
+
+                <div id="form-step-4" class="form-step-anchor space-y-8 scroll-mt-24">
+                <!-- Section 7: Pièces jointes -->
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 border border-white/20 shadow-2xl  transition-all duration-300">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6 gx-card-top min-w-0">
+                        <div class="flex items-center gx-section-head">
+                            <span class="text-2xl sm:text-3xl mr-2 sm:mr-3 flex-shrink-0" aria-hidden="true">📸</span>
+                            <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-white min-w-0">Pièces jointes</h2>
+                        </div>
+                        <span class="gx-step-badge">Étape 4 sur 4</span>
+                    </div>
+                    <p class="gx-text-muted text-sm mb-6">Photo nette du visage, carte d’électeur lisible (recto et verso). Le CV est facultatif.</p>
+
+                    <!-- Prévisualisation des photos principales -->
+                    <div class="mb-8 p-4 sm:p-6 bg-white/5 rounded-xl border border-white/10 gx-preview-outer min-w-0 max-w-full">
+                        <h3 class="text-white font-semibold mb-6">Prévisualisation des documents</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 gx-doc-preview-grid">
+                            <!-- Prévisualisation Photo du postulant -->
+                            <div class="file-preview-box">
+                                <label class="block text-white font-semibold mb-3 text-center text-sm">📷 Photo du postulant</label>
+                                <div id="postulantPhotoPreview" class="preview-container">
+                                    <div class="preview-placeholder">
+                                        <span class="text-3xl">📸</span>
+                                        <p class="text-white text-xs mt-2">Aperçu</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Prévisualisation Carte d'électeur Recto -->
+                            <div class="file-preview-box">
+                                <label class="block text-white font-semibold mb-3 text-center text-sm">🆔 Carte Recto</label>
+                                <div id="cardRectoPreview" class="preview-container">
+                                    <div class="preview-placeholder">
+                                        <span class="text-3xl">📄</span>
+                                        <p class="text-white text-xs mt-2">Recto</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Prévisualisation Carte d'électeur Verso -->
+                            <div class="file-preview-box">
+                                <label class="block text-white font-semibold mb-3 text-center text-sm">🆔 Carte Verso</label>
+                                <div id="cardVersoPreview" class="preview-container">
+                                    <div class="preview-placeholder">
+                                        <span class="text-3xl">📄</span>
+                                        <p class="text-white text-xs mt-2">Verso</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Champs de téléchargement -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 gx-file-upload-grid">
+                        <div class="file-input-group">
+                            <label for="postulantPhotoInput" class="block text-white font-semibold mb-2">Photo du postulant *</label>
+                            <input type="file" name="postulantPhoto" accept="image/*" required class="file-input" id="postulantPhotoInput" onchange="previewPostulantPhoto(this)">
+                        </div>
+
+                        <div class="file-input-group">
+                            <label for="cardRectoInput" class="block text-white font-semibold mb-2">Carte d’électeur — recto *</label>
+                            <input type="file" name="cardRecto" accept="image/*" required class="file-input" id="cardRectoInput" onchange="previewCardRecto(this)">
+                        </div>
+
+                        <div class="file-input-group">
+                            <label for="cardVersoInput" class="block text-white font-semibold mb-2">Carte d’électeur — verso *</label>
+                            <input type="file" name="cardVerso" accept="image/*" required class="file-input" id="cardVersoInput" onchange="previewCardVerso(this)">
+                        </div>
+
+                        <div class="file-input-group">
+                            <label for="cvInput" class="block text-white font-semibold mb-2">Copie du CV (optionnel)</label>
+                            <input id="cvInput" type="file" name="cv" accept=".pdf,.doc,.docx" class="file-input">
+                        </div>
+
+                        <div id="transportFileGroup" class="file-input-group hidden">
+                            <label class="block text-white font-semibold mb-2">Photo du moyen de transport (facultatif)</label>
+                            <input type="file" name="transportPhoto" accept="image/*" class="file-input" id="transportPhotoInput">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 8: Déclaration -->
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 border border-white/20 shadow-2xl  transition-all duration-300">
+                    <div class="flex items-center gx-section-head mb-6">
+                        <span class="text-2xl sm:text-3xl mr-2 sm:mr-3 flex-shrink-0" aria-hidden="true">✅</span>
+                        <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-white min-w-0">Déclaration &amp; signature</h2>
+                    </div>
+
+                    <div class="space-y-6">
+                        <label class="checkbox-group">
+                            <input type="checkbox" name="declaration" required aria-required="true">
+                            <span class="checkbox-label text-white">Je certifie que les informations fournies sont exactes et j'autorise Green Express à les utiliser dans le cadre du processus de recrutement.</span>
+                        </label>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="form-group">
+                                <label for="signatureName" class="block text-white font-semibold mb-2">Nom complet *</label>
+                                <input id="signatureName" type="text" name="signatureName" required placeholder="Votre nom" class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:outline-none transition-all duration-300">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="signatureDate" class="block text-white font-semibold mb-2">Date *</label>
+                                <input id="signatureDate" type="date" name="date" required class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/30 text-white focus:outline-none focus:outline-none transition-all duration-300">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Boutons -->
+                <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-stretch sm:items-center pb-12">
+                    <button type="reset" class="px-8 py-3 rounded-lg bg-white/10 border border-white/30 text-white font-semibold hover:bg-white/20 transition-all duration-300 cursor-pointer order-2 sm:order-1">
+                        Effacer le formulaire
+                    </button>
+                    <button type="submit" id="submitApplicationBtn" class="px-8 py-3 rounded-lg cursor-pointer order-1 sm:order-2 min-h-[48px]">
+                        Envoyer ma candidature
+                    </button>
+                </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/script.js"></script>
+</body>
+</html>

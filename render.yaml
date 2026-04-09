@@ -1,0 +1,33 @@
+# Blueprint Render — https://render.com/docs/blueprint-spec
+# Déploiement : Dashboard Render → New → Blueprint → connecter ce dépôt Git.
+# Renseigne les variables marquées sync: false dans l’UI (ou laisse-les vides ici et ajoute-les à la main).
+
+services:
+  - type: web
+    name: green-express-recrutement
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      # Render injecte PORT automatiquement ; ne pas le fixer en dur.
+      - key: MYSQL_HOST
+        sync: false
+      - key: MYSQL_PORT
+        sync: false
+      - key: MYSQL_USER
+        sync: false
+      - key: MYSQL_PASSWORD
+        sync: false
+      - key: MYSQL_DATABASE
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false

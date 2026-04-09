@@ -1,0 +1,528 @@
+/**
+ * API Express + MySQL locale pour les candidatures Green Express.
+ * Lancez : npm install && copiez .env.example vers .env, puis npm start
+ * Ouvrez : http://localhost:4050/ (port dans .env, défaut 4050)
+ */
+
+require('dotenv').config();
+const path = require('path');
+const fs = require('fs');
+const express = require('express');
+const cors = require('cors');
+const multer = require('multer');
+const jwt = require('jsonwebtoken');
+const mysql = require('mysql2/promise');
+const { streamApplicationPdf } = require('./applicationPdf');
+
+const PORT = Number(process.env.PORT) || 4050;
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-change-me';
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'admin@greenexpress.com').toLowerCase().trim();
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+
+const UPLOAD_ROOT = path.join(__dirname, 'uploads');
+const UPLOAD_APPS = path.join(UPLOAD_ROOT, 'applications');
+
+if (!fs.existsSync(UPLOAD_APPS)) {
+  fs.mkdirSync(UPLOAD_APPS, { recursive: true });
+}
+
+const pool = mysql.createPool({
+  host: process.env.MYSQL_HOST || '127.0.0.1',
+  port: Number(process.env.MYSQL_PORT) || 3306,
+  user: process.env.MYSQL_USER || 'root',
+  password: process.env.MYSQL_PASSWORD || '',
+  database: process.env.MYSQL_DATABASE || 'cv_greenexpress',
+  waitForConnections: true,
+  connectionLimit: 10,
+});
+
+const app = express();
+app.use(cors());
+app.use(express.json({ limit: '512kb' }));
+
+/** Dossier des pages (toujours à côté de ce fichier server.js) */
+const PUBLIC_DIR = path.join(__dirname, 'public');
+if (!fs.existsSync(PUBLIC_DIR)) {
+  fs.mkdirSync(PUBLIC_DIR, { recursive: true });
+}
+
+/** Lecture disque puis envoi (évite les bugs de sendFile sous Windows) */
+const MIME_PUBLIC = {
+  'index.html': 'text/html; charset=utf-8',
+  'admin.html': 'text/html; charset=utf-8',
+  'script.js': 'application/javascript; charset=utf-8',
+  'admin.js': 'application/javascript; charset=utf-8',
+  'styles.css': 'text/css; charset=utf-8',
+  'favicon.svg': 'image/svg+xml; charset=utf-8',
+};
+
+function sendPublic(res, relativeName) {
+  const resolvedPublic = path.resolve(PUBLIC_DIR);
+  const abs = path.resolve(resolvedPublic, relativeName);
+  const rel = path.relative(resolvedPublic, abs);
+  if (rel.startsWith('..') || path.isAbsolute(rel)) {
+    return res.status(403).type('text/plain').send('Green Express: chemin refusé');
+  }
+  if (!fs.existsSync(abs)) {
+    console.error('[Green Express] Absent sur disque:', abs);
+    return res
+      .status(404)
+      .type('text/html; charset=utf-8')
+      .send(
+        `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Green Express</title></head><body>` +
+          `<h1>Green Express</h1><p>Fichier manquant : <code>${relativeName}</code></p>` +
+          `<p>Chemin complet : <code>${abs}</code></p>` +
+          `<p>Ouvrez le bon port (voir terminal après <code>npm start</code>).</p></body></html>`
+      );
+  }
+  res.set('X-Green-Express', '1');
+  if (relativeName.endsWith('.png')) {
+    return res.type('image/png').send(fs.readFileSync(abs));
+  }
+  const ctype = MIME_PUBLIC[relativeName] || 'text/plain; charset=utf-8';
+  return res.type(ctype).send(fs.readFileSync(abs, 'utf8'));
+}
+
+app.use('/uploads', express.static(UPLOAD_ROOT));
+
+app.get('/health', (_req, res) => {
+  res.set('X-Green-Express', '1');
+  // api.applicationPdf : présent dans ce serveur (vérifiez après redémarrage si le PDF 404)
+  res.json({
+    ok: true,
+    publicDir: PUBLIC_DIR,
+    api: { applicationPdf: true },
+  });
+});
+
+app.get('/admin', (_req, res) => res.redirect(302, '/admin.html'));
+
+app.get('/', (_req, res) => sendPublic(res, 'index.html'));
+app.get('/index.html', (_req, res) => sendPublic(res, 'index.html'));
+app.get('/admin.html', (_req, res) => sendPublic(res, 'admin.html'));
+app.get('/script.js', (_req, res) => sendPublic(res, 'script.js'));
+app.get('/admin.js', (_req, res) => sendPublic(res, 'admin.js'));
+app.get('/styles.css', (_req, res) => sendPublic(res, 'styles.css'));
+app.get('/favicon.svg', (_req, res) => sendPublic(res, 'favicon.svg'));
+app.get('/favicon.ico', (_req, res) => res.redirect(302, '/favicon.svg'));
+
+app.get('/logo.png', (_req, res) => {
+  const p = path.join(PUBLIC_DIR, 'logo.png');
+  if (!fs.existsSync(p)) return res.status(404).end();
+  sendPublic(res, 'logo.png');
+});
+
+function authAdmin(req, res, next) {
+  const h = req.headers.authorization;
+  if (!h || !h.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Non autorisé' });
+  }
+  try {
+    const payload = jwt.verify(h.slice(7), JWT_SECRET);
+    if (payload.role !== 'admin') throw new Error('role');
+    next();
+  } catch {
+    return res.status(401).json({ error: 'Session expirée ou invalide' });
+  }
+}
+
+app.post('/api/admin/login', (req, res) => {
+  const email = String(req.body?.email || '').toLowerCase().trim();
+  const password = String(req.body?.password || '');
+  if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+    const token = jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '8h' });
+    return res.json({ token });
+  }
+  return res.status(401).json({ error: 'Identifiants invalides' });
+});
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, UPLOAD_APPS),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname || '') || '';
+    const safe = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}${ext}`;
+    cb(null, safe);
+  },
+});
+
+function fileFilter(_req, file, cb) {
+  if (file.fieldname === 'cv') {
+    const ok = /\.(pdf|doc|docx)$/i.test(file.originalname || '');
+    if (ok) return cb(null, true);
+    return cb(new Error('Le CV doit être en PDF, DOC ou DOCX.'));
+  }
+  const mime = file.mimetype || '';
+  if (mime.startsWith('image/')) return cb(null, true);
+  return cb(new Error('Seules les images sont acceptées pour ce champ.'));
+}
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 8 * 1024 * 1024, files: 8 },
+  fileFilter,
+});
+
+const uploadFields = upload.fields([
+  { name: 'postulantPhoto', maxCount: 1 },
+  { name: 'cardRecto', maxCount: 1 },
+  { name: 'cardVerso', maxCount: 1 },
+  { name: 'cv', maxCount: 1 },
+  { name: 'transportPhoto', maxCount: 1 },
+]);
+
+function toArray(val) {
+  if (val === undefined || val === null || val === '') return [];
+  return Array.isArray(val) ? val : [val];
+}
+
+function parseJsonField(val) {
+  if (val == null) return null;
+  if (typeof val === 'object') return val;
+  if (typeof val === 'string') {
+    try {
+      return JSON.parse(val);
+    } catch {
+      return val;
+    }
+  }
+  return val;
+}
+
+function relPath(file) {
+  if (!file) return null;
+  return path.join('applications', file.filename).replace(/\\/g, '/');
+}
+
+function wantsDelivery(positions) {
+  return positions.some((p) => String(p).toLowerCase() === 'livreur');
+}
+
+function rowToClient(row) {
+  if (!row) return row;
+  const base = '/uploads/';
+  const pick = (p) => (p ? `${base}${p}` : null);
+  return {
+    id: row.id,
+    full_name: row.full_name,
+    fullName: row.full_name,
+    age: row.age,
+    gender: row.gender,
+    address: row.address,
+    whatsapp: row.whatsapp,
+    email: row.email,
+    position: parseJsonField(row.position) || [],
+    autre_poste_text: row.autre_poste_text,
+    autrePosteText: row.autre_poste_text,
+    availability: row.availability,
+    days: parseJsonField(row.days) || [],
+    other_job: row.other_job,
+    otherJob: row.other_job,
+    experience: row.experience,
+    experience_details: row.experience_details,
+    experienceDetails: row.experience_details,
+    skills: row.skills,
+    smartphone: row.smartphone,
+    languages: parseJsonField(row.languages) || [],
+    transport: row.transport,
+    license: row.license,
+    weather: row.weather,
+    delivery_zone: row.delivery_zone,
+    deliveryZone: row.delivery_zone,
+    motivation: row.motivation,
+    discovery: row.discovery,
+    motto: row.motto,
+    client_service: row.client_service,
+    clientService: row.client_service,
+    postulant_photo_path: row.postulant_photo_path,
+    postulant_photo_url: pick(row.postulant_photo_path),
+    card_recto_path: row.card_recto_path,
+    card_recto_url: pick(row.card_recto_path),
+    card_verso_path: row.card_verso_path,
+    card_verso_url: pick(row.card_verso_path),
+    cv_path: row.cv_path,
+    cv_url: pick(row.cv_path),
+    transport_photo_path: row.transport_photo_path,
+    transport_photo_url: pick(row.transport_photo_path),
+    signature_name: row.signature_name,
+    signatureName: row.signature_name,
+    date_signed: row.date_signed,
+    date: row.date_signed,
+    declaration: Boolean(row.declaration),
+    submitted_at: row.submitted_at,
+    submittedAt: row.submitted_at,
+  };
+}
+
+app.get('/api/applications', authAdmin, async (_req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT * FROM applications ORDER BY submitted_at DESC'
+    );
+    res.json({ data: rows.map(rowToClient) });
+  } catch (err) {
+    console.error('list applications', err);
+    res.status(500).json({ error: 'Impossible de lister les candidatures' });
+  }
+});
+
+async function handleApplicationPdf(req, res, id) {
+  if (!Number.isFinite(id) || id < 1) {
+    return res.status(400).json({ error: 'ID invalide' });
+  }
+  try {
+    const [rows] = await pool.query('SELECT * FROM applications WHERE id = ? LIMIT 1', [id]);
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Candidature introuvable' });
+    }
+    await streamApplicationPdf(rows[0], res, UPLOAD_ROOT);
+  } catch (err) {
+    console.error('export pdf', err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Impossible de générer le PDF' });
+    }
+  }
+}
+
+app.get('/api/applications/:id/pdf', authAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  await handleApplicationPdf(req, res, id);
+});
+
+/** Même export en query string (évite conflits si un proxy ou le static intercepte le segment /pdf) */
+app.get('/api/application-pdf', authAdmin, async (req, res) => {
+  const id = Number(req.query.id);
+  await handleApplicationPdf(req, res, id);
+});
+
+app.post('/api/applications', (req, res, next) => {
+  uploadFields(req, res, (err) => {
+    if (err) {
+      if (err instanceof multer.MulterError) {
+        return res.status(400).json({
+          error: err.code === 'LIMIT_FILE_SIZE' ? 'Fichier trop volumineux (max 8 Mo).' : err.message,
+        });
+      }
+      return res.status(400).json({ error: err.message || 'Fichier invalide' });
+    }
+    next();
+  });
+}, async (req, res) => {
+  const b = req.body || {};
+  const files = req.files || {};
+
+  const position = toArray(b.position);
+  const days = toArray(b.days);
+  const languages = toArray(b.languages);
+
+  const missing = [];
+  const need = [
+    ['fullName', b.fullName],
+    ['age', b.age],
+    ['gender', b.gender],
+    ['address', b.address],
+    ['whatsapp', b.whatsapp],
+    ['email', b.email],
+    ['availability', b.availability],
+    ['otherJob', b.otherJob],
+    ['experience', b.experience],
+    ['skills', b.skills],
+    ['smartphone', b.smartphone],
+    ['motivation', b.motivation],
+    ['discovery', b.discovery],
+    ['motto', b.motto],
+    ['clientService', b.clientService],
+    ['signatureName', b.signatureName],
+    ['date', b.date],
+  ];
+  need.forEach(([k, v]) => {
+    if (v === undefined || v === null || String(v).trim() === '') missing.push(k);
+  });
+
+  if (position.length === 0) missing.push('position');
+  if (days.length === 0) missing.push('days');
+
+  const declaration =
+    b.declaration === true ||
+    b.declaration === 'true' ||
+    b.declaration === 'on' ||
+    b.declaration === '1';
+
+  if (!declaration) missing.push('declaration');
+
+  const postulantPhoto = files.postulantPhoto?.[0];
+  const cardRecto = files.cardRecto?.[0];
+  const cardVerso = files.cardVerso?.[0];
+  if (!postulantPhoto) missing.push('postulantPhoto');
+  if (!cardRecto) missing.push('cardRecto');
+  if (!cardVerso) missing.push('cardVerso');
+
+  if (position.includes('autre') && !String(b.autrePosteText || '').trim()) {
+    missing.push('autrePosteText');
+  }
+
+  const delivery = wantsDelivery(position);
+  if (delivery) {
+    ['transport', 'license', 'weather', 'deliveryZone'].forEach((k) => {
+      const v = b[k];
+      if (v === undefined || v === null || String(v).trim() === '') missing.push(k);
+    });
+  }
+
+  if (missing.length > 0) {
+    return res.status(400).json({ error: 'Champs requis manquants', fields: missing });
+  }
+
+  const ageNum = Number(b.age);
+  if (!Number.isFinite(ageNum) || ageNum < 18 || ageNum > 100) {
+    return res.status(400).json({ error: 'Âge invalide (18 à 100 ans)' });
+  }
+
+  const submittedAt = b.submittedAt ? new Date(b.submittedAt) : new Date();
+  if (Number.isNaN(submittedAt.getTime())) {
+    return res.status(400).json({ error: 'Date de soumission invalide' });
+  }
+
+  const cvFile = files.cv?.[0];
+  const transportFile = files.transportPhoto?.[0];
+
+  const payload = {
+    full_name: String(b.fullName).trim(),
+    age: ageNum,
+    gender: String(b.gender),
+    address: String(b.address).trim(),
+    whatsapp: String(b.whatsapp).trim(),
+    email: String(b.email).trim().toLowerCase(),
+    position: JSON.stringify(position),
+    autre_poste_text: b.autrePosteText ? String(b.autrePosteText).trim() : null,
+    availability: String(b.availability),
+    days: JSON.stringify(days),
+    other_job: String(b.otherJob),
+    experience: String(b.experience),
+    experience_details: b.experienceDetails ? String(b.experienceDetails).trim() : null,
+    skills: String(b.skills).trim(),
+    smartphone: String(b.smartphone),
+    languages: JSON.stringify(languages),
+    transport: delivery ? String(b.transport) : null,
+    license: delivery ? String(b.license) : null,
+    weather: delivery ? String(b.weather) : null,
+    delivery_zone: delivery ? String(b.deliveryZone).trim() : null,
+    motivation: String(b.motivation).trim(),
+    discovery: String(b.discovery).trim(),
+    motto: String(b.motto).trim(),
+    client_service: String(b.clientService).trim(),
+    postulant_photo_path: relPath(postulantPhoto),
+    card_recto_path: relPath(cardRecto),
+    card_verso_path: relPath(cardVerso),
+    cv_path: relPath(cvFile),
+    transport_photo_path: relPath(transportFile),
+    signature_name: String(b.signatureName).trim(),
+    date_signed: String(b.date),
+    declaration: declaration ? 1 : 0,
+    submitted_at: submittedAt,
+  };
+
+  try {
+    const [result] = await pool.query('INSERT INTO applications SET ?', payload);
+    const [rows] = await pool.query('SELECT * FROM applications WHERE id = ?', [
+      result.insertId,
+    ]);
+    res.status(201).json({ data: rowToClient(rows[0]) });
+  } catch (err) {
+    console.error('insert application', err);
+    res.status(500).json({ error: 'Impossible d’enregistrer la candidature' });
+  }
+});
+
+async function ensureTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS applications (
+      id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      full_name VARCHAR(255) NOT NULL,
+      age TINYINT UNSIGNED NULL,
+      gender VARCHAR(32) NULL,
+      address TEXT NULL,
+      whatsapp VARCHAR(64) NULL,
+      email VARCHAR(255) NULL,
+      position JSON NULL,
+      autre_poste_text VARCHAR(255) NULL,
+      availability VARCHAR(32) NULL,
+      days JSON NULL,
+      other_job VARCHAR(16) NULL,
+      experience VARCHAR(16) NULL,
+      experience_details TEXT NULL,
+      skills TEXT NULL,
+      smartphone VARCHAR(16) NULL,
+      languages JSON NULL,
+      transport VARCHAR(32) NULL,
+      license VARCHAR(16) NULL,
+      weather VARCHAR(16) NULL,
+      delivery_zone VARCHAR(255) NULL,
+      motivation TEXT NULL,
+      discovery VARCHAR(512) NULL,
+      motto TEXT NULL,
+      client_service TEXT NULL,
+      postulant_photo_path VARCHAR(512) NULL,
+      card_recto_path VARCHAR(512) NULL,
+      card_verso_path VARCHAR(512) NULL,
+      cv_path VARCHAR(512) NULL,
+      transport_photo_path VARCHAR(512) NULL,
+      signature_name VARCHAR(255) NULL,
+      date_signed DATE NULL,
+      declaration TINYINT(1) NOT NULL DEFAULT 0,
+      submitted_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+      INDEX idx_submitted (submitted_at),
+      INDEX idx_email (email)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+}
+
+/** Ne jamais servir de fichiers sous /api (sinon 404 silencieux à la place des routes API) */
+app.use((req, res, next) => {
+  const p = req.path || '';
+  if (p === '/api' || p.startsWith('/api/')) {
+    return next();
+  }
+  express.static(PUBLIC_DIR, {
+    dotfiles: 'deny',
+    index: false,
+  })(req, res, next);
+});
+
+app.use((req, res) => {
+  res.set('X-Green-Express', '1');
+  if (req.method === 'GET' && req.accepts('html')) {
+    return res
+      .status(404)
+      .type('text/html; charset=utf-8')
+      .send(
+        `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>404 — Green Express</title></head><body>` +
+          `<p><strong>Green Express</strong> — aucune page pour <code>${req.path}</code>.</p>` +
+          `<p><a href="/">Formulaire</a> · <a href="/admin.html">Admin</a></p>` +
+          `<p><small>Si ce message ne s’affiche pas, ce n’est pas ce serveur (vérifiez le port 4000).</small></p>` +
+          `</body></html>`
+      );
+  }
+  res.status(404).type('text/plain; charset=utf-8').send(`404 Green Express — ${req.path}`);
+});
+
+app.listen(Number(PORT), '0.0.0.0', async () => {
+  const check = (f) => (fs.existsSync(path.join(PUBLIC_DIR, f)) ? 'OK' : 'MANQUANT');
+  console.log('');
+  console.log('========== Green Express ==========');
+  console.log('Dossier public :', PUBLIC_DIR);
+  console.log('index.html     :', check('index.html'));
+  console.log('admin.html     :', check('admin.html'));
+  console.log('styles.css     :', check('styles.css'));
+  console.log('Test API       : GET http://localhost:' + PORT + '/health  → doit afficher JSON { ok: true, publicDir: ... }');
+  console.log('====================================');
+  console.log('Site  : http://localhost:' + PORT + '/');
+  console.log('Admin : http://localhost:' + PORT + '/admin.html');
+  console.log('');
+
+  try {
+    await ensureTable();
+  } catch (e) {
+    console.error('MySQL indisponible ou base incorrecte :', e.message);
+    console.error('Vérifiez MYSQL_* dans .env et exécutez schema.sql si besoin.');
+  }
+});
