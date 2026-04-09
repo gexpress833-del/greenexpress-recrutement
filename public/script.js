@@ -151,7 +151,8 @@ async function createApplication(form) {
                 (Array.isArray(errJson.fields)
                     ? `Champs manquants : ${errJson.fields.join(', ')}`
                     : 'Erreur lors de la soumission');
-            throw new Error(msg);
+            const hint = typeof errJson.hint === 'string' && errJson.hint.trim() ? errJson.hint.trim() : '';
+            throw new Error(hint ? `${msg}\n\n${hint}` : msg);
         }
         return errJson.data;
     } catch (err) {

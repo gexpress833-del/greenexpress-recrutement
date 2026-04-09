@@ -338,6 +338,82 @@ function unlinkApplicationRowFiles(row) {
   ].forEach(safeUnlinkStoredUpload);
 }
 
+const INSERT_ERROR_HINT_DEFAULT =
+  'Sur Render : Web Service → Environment → DATABASE_URL doit être l’« Internal Database URL » de votre Postgres (ou liaison « Link Database »). Puis Logs : cherchez « insert application » après un envoi. Redéployez après toute modification des variables.';
+
+/** Réponses lisibles pour l’utilisateur du formulaire (sans exposer les détails techniques). */
+function mapApplicationInsertError(err) {
+  const code = err && err.code;
+  const msg = String((err && err.message) || '').toLowerCase();
+  const base = 'Impossible d’enregistrer la candidature.';
+
+  const withDefault = (hint) => ({ error: base, hint: hint || INSERT_ERROR_HINT_DEFAULT });
+
+  if (code === '42P01' || (msg.includes('relation') && msg.includes('does not exist'))) {
+    return withDefault(
+      'Table absente ou mauvaise base. Vérifiez que DATABASE_URL pointe vers la bonne base et redémarrez le service (ensureTable crée les tables au démarrage), ou exécutez npm run db:seed sur cette même base.'
+    );
+  }
+  if (code === '42703') {
+    return withDefault(
+      'Le schéma de la base ne correspond pas à l’application. Recréez les tables (schema.sql / npm run db:seed).'
+    );
+  }
+  if (
+    code === '28P01' ||
+    code === '28000' ||
+    msg.includes('password authentication failed') ||
+    msg.includes('authentication failed')
+  ) {
+    return withDefault(
+      'Connexion refusée par PostgreSQL. Mettez à jour DATABASE_URL sur le service web (mot de passe de la base dans le dashboard Render).'
+    );
+  }
+  if (code === '3D000' || msg.includes('database') && msg.includes('does not exist')) {
+    return withDefault('Le nom de base dans DATABASE_URL est incorrect.');
+  }
+  if (
+    code === 'ECONNREFUSED' ||
+    code === 'ENOTFOUND' ||
+    code === 'ETIMEDOUT' ||
+    code === '08006' ||
+    code === '08001' ||
+    msg.includes('econnrefused') ||
+    msg.includes('enotfound') ||
+    msg.includes('connect timed out') ||
+    msg.includes('connection terminated')
+  ) {
+    return withDefault(
+      'Le serveur n’atteint pas PostgreSQL. Base suspendue ou URL incorrecte : utilisez l’URL interne Render si le web et la base sont sur Render.'
+    );
+  }
+  if (
+    msg.includes('certificate') ||
+    msg.includes('ssl') ||
+    msg.includes('tls') ||
+    code === 'DEPTH_ZERO_SELF_SIGNED_CERT' ||
+    code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE'
+  ) {
+    return withDefault(
+      'Problème SSL vers la base. Sur Render, utilisez l’URL interne fournie par le dashboard ; évitez de mélanger hôte externe et options SSL incorrectes.'
+    );
+  }
+  if (code === '22001' || msg.includes('value too long')) {
+    return withDefault('Une réponse dépasse la taille autorisée en base. Raccourcissez un champ texte ou contactez l’administrateur.');
+  }
+  if (code === '22007' || msg.includes('invalid input syntax for type date')) {
+    return withDefault('Date invalide. Utilisez le sélecteur de date du formulaire (format AAAA-MM-JJ).');
+  }
+  if (code === '53300' || msg.includes('too many connections')) {
+    return withDefault('Trop de connexions sur la base PostgreSQL. Réessayez plus tard ou passez à un plan supérieur sur Render.');
+  }
+  if (code === '23505') {
+    return withDefault('Conflit d’enregistrement (doublon). Réessayez ou contactez l’administrateur.');
+  }
+
+  return withDefault(null);
+}
+
 app.get('/api/applications', authAdmin, async (_req, res) => {
   try {
     const { rows } = await pool.query(
@@ -599,7 +675,8 @@ app.post('/api/applications', async (req, res, next) => {
     res.status(201).json({ data: rowToClient(rows[0]) });
   } catch (err) {
     console.error('insert application', err);
-    res.status(500).json({ error: 'Impossible d’enregistrer la candidature' });
+    const mapped = mapApplicationInsertError(err);
+    res.status(500).json({ error: mapped.error, hint: mapped.hint });
   }
 });
 

@@ -1,6 +1,10 @@
 # Blueprint Render — https://render.com/docs/blueprint-spec
 # Déploiement : Dashboard Render → New → Blueprint → connecter ce dépôt Git.
-# La base PostgreSQL est créée avec le Web Service ; DATABASE_URL est injectée automatiquement.
+#
+# DATABASE_URL : avec ce blueprint, elle est injectée depuis la base « greenexpress-postgres » ci-dessous.
+# Si vous utilisez une base Postgres créée à part (hors blueprint), ouvrez le Web Service sur le dashboard
+# → Environment → ajoutez DATABASE_URL = Internal Database URL de cette base, ou liez la base au service.
+# Sans DATABASE_URL sur le service web, les candidatures ne s’enregistrent pas.
 
 databases:
   - name: greenexpress-postgres
