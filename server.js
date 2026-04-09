@@ -233,6 +233,25 @@ function toArray(val) {
   return Array.isArray(val) ? val : [val];
 }
 
+/** Champ formulaire multipart : une valeur ou le premier élément si doublon. */
+function firstScalarField(val) {
+  if (val === undefined || val === null) return '';
+  if (Array.isArray(val)) {
+    const x = val.find((v) => v != null && String(v).trim() !== '');
+    return x != null ? String(x).trim() : '';
+  }
+  return String(val).trim();
+}
+
+/** Attendu : AAAA-MM-JJ (input type="date"). Évite d’envoyer une chaîne invalide à PostgreSQL (DATE). */
+function parseIsoDateOnly(val) {
+  const s = firstScalarField(val);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+  const [y, m, d] = s.split('-').map(Number);
+  if (!y || m < 1 || m > 12 || d < 1 || d > 31) return null;
+  return s;
+}
+
 function parseJsonField(val) {
   if (val == null) return null;
   if (typeof val === 'object') return val;
@@ -529,7 +548,11 @@ app.post('/api/applications', async (req, res, next) => {
     ['date', b.date],
   ];
   need.forEach(([k, v]) => {
-    if (v === undefined || v === null || String(v).trim() === '') missing.push(k);
+    if (k === 'date') {
+      if (!parseIsoDateOnly(v)) missing.push(k);
+      return;
+    }
+    if (firstScalarField(v) === '') missing.push(k);
   });
 
   if (position.length === 0) missing.push('position');
@@ -610,7 +633,7 @@ app.post('/api/applications', async (req, res, next) => {
     cv_path: relPath(cvFile),
     transport_photo_path: relPath(transportFile),
     signature_name: String(b.signatureName).trim(),
-    date_signed: String(b.date),
+    date_signed: parseIsoDateOnly(b.date),
     declaration: declaration ? 1 : 0,
     submitted_at: submittedAt,
   };
