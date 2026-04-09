@@ -3,6 +3,7 @@ const ADMIN_JWT_KEY = 'gx_admin_jwt';
 
 let adminApplications = [];
 let adminPdfDetailId = null;
+let adminFormGateSyncing = false;
 
 function getAdminToken() {
     return sessionStorage.getItem(ADMIN_JWT_KEY);
@@ -60,7 +61,7 @@ async function handleAdminLogin(event) {
         if (errorEl) errorEl.classList.add('hidden');
 
         showDashboard();
-        await loadApplications();
+        await Promise.all([loadApplications(), refreshFormGateUi()]);
     } catch {
         if (errorEl) {
             errorEl.textContent = 'Impossible de joindre le serveur.';
@@ -285,6 +286,70 @@ async function exportAdminPdf() {
     }
 }
 
+async function refreshFormGateUi() {
+    const toggle = document.getElementById('adminFormGateToggle');
+    const statusEl = document.getElementById('adminFormGateStatus');
+    const errEl = document.getElementById('adminFormGateError');
+    if (!toggle || !statusEl) return;
+    if (errEl) errEl.classList.add('hidden');
+    try {
+        const res = await fetch(`${API_BASE}/api/form-status`);
+        const j = await res.json().catch(() => ({}));
+        const blocked = res.ok && j.submissionsBlocked === true;
+        adminFormGateSyncing = true;
+        toggle.checked = blocked;
+        adminFormGateSyncing = false;
+        statusEl.textContent = blocked
+            ? 'Statut : formulaire fermé au public.'
+            : 'Statut : formulaire ouvert — les candidatures sont acceptées.';
+    } catch {
+        statusEl.textContent = 'Impossible de lire le statut du formulaire.';
+    }
+}
+
+async function commitFormGate(blocked) {
+    const errEl = document.getElementById('adminFormGateError');
+    const toggle = document.getElementById('adminFormGateToggle');
+    const statusEl = document.getElementById('adminFormGateStatus');
+    if (errEl) errEl.classList.add('hidden');
+    try {
+        const res = await fetch(`${API_BASE}/api/admin/form-status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', ...adminAuthHeaders() },
+            body: JSON.stringify({ blocked }),
+        });
+        const j = await res.json().catch(() => ({}));
+        if (res.status === 401) {
+            sessionStorage.removeItem(ADMIN_JWT_KEY);
+            showLoginScreen();
+            return;
+        }
+        if (!res.ok) {
+            if (errEl) {
+                errEl.textContent = j.error || 'Mise à jour impossible.';
+                errEl.classList.remove('hidden');
+            }
+            await refreshFormGateUi();
+            return;
+        }
+        const b = j.submissionsBlocked === true;
+        adminFormGateSyncing = true;
+        if (toggle) toggle.checked = b;
+        adminFormGateSyncing = false;
+        if (statusEl) {
+            statusEl.textContent = b
+                ? 'Statut : formulaire fermé au public.'
+                : 'Statut : formulaire ouvert — les candidatures sont acceptées.';
+        }
+    } catch {
+        if (errEl) {
+            errEl.textContent = 'Erreur réseau.';
+            errEl.classList.remove('hidden');
+        }
+        await refreshFormGateUi();
+    }
+}
+
 async function fetchApplications() {
     try {
         const res = await fetch(`${API_BASE}/api/applications`, {
@@ -327,9 +392,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const gateToggle = document.getElementById('adminFormGateToggle');
+    if (gateToggle) {
+        gateToggle.addEventListener('change', (e) => {
+            if (adminFormGateSyncing) return;
+            commitFormGate(Boolean(e.target.checked));
+        });
+    }
+
     if (getAdminToken()) {
         showDashboard();
-        loadApplications();
+        Promise.all([loadApplications(), refreshFormGateUi()]);
     } else {
         showLoginScreen();
     }

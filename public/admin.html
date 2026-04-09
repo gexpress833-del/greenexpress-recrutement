@@ -70,6 +70,18 @@
 
             <div class="gx-container admin-dash-body">
                 <div class="bg-white/10 backdrop-blur-md rounded-2xl admin-card-pad border border-white/20 shadow-2xl admin-card-surface">
+                    <section class="admin-form-gate mb-8 pb-8 border-b border-white/15" aria-labelledby="adminFormGateHeading">
+                        <h2 id="adminFormGateHeading" class="admin-form-gate__title font-heading text-white text-lg font-semibold mb-2">Formulaire public</h2>
+                        <p class="gx-text-muted text-sm mb-4" id="adminFormGateDesc">Bloquez ou rouvrez les soumissions du formulaire de recrutement (page d’accueil). Quand l’option est activée, le public ne peut plus envoyer de candidature.</p>
+                        <div class="admin-form-gate__row">
+                            <label class="admin-form-gate__switch">
+                                <input type="checkbox" id="adminFormGateToggle" aria-describedby="adminFormGateDesc adminFormGateStatus">
+                                <span class="admin-form-gate__label-text">Bloquer les nouvelles candidatures</span>
+                            </label>
+                        </div>
+                        <p id="adminFormGateStatus" class="admin-form-gate__status gx-text-muted text-sm mt-3" aria-live="polite"></p>
+                        <p id="adminFormGateError" class="admin-login-error hidden mt-2" role="alert"></p>
+                    </section>
                     <div class="gx-table-wrap">
                         <table class="gx-table">
                             <thead>

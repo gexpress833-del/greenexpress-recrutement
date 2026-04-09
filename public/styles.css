@@ -1459,3 +1459,72 @@ body.gx-page #recruitmentForm textarea {
         overflow: hidden;
     }
 }
+
+/* Formulaire public fermé par l’admin */
+.gx-form-closed-banner {
+    border-radius: 1rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid rgba(251, 191, 36, 0.45);
+    background: rgba(120, 53, 15, 0.35);
+    backdrop-filter: blur(8px);
+}
+
+.gx-form-closed-banner.hidden {
+    display: none;
+}
+
+.gx-form-closed-banner__title {
+    color: #fde68a;
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin: 0 0 0.35rem;
+}
+
+.gx-form-closed-banner__text {
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 0.875rem;
+    line-height: 1.45;
+    margin: 0;
+}
+
+.gx-form-root--closed {
+    opacity: 0.72;
+    pointer-events: none;
+}
+
+/* Admin — bloc ouverture / fermeture formulaire */
+.admin-form-gate__title {
+    margin-top: 0;
+}
+
+.admin-form-gate__row {
+    margin-top: 0.25rem;
+}
+
+.admin-form-gate__switch {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 0.9375rem;
+    line-height: 1.4;
+    max-width: 36rem;
+}
+
+.admin-form-gate__switch input {
+    width: 1.2rem;
+    height: 1.2rem;
+    margin-top: 0.12rem;
+    flex-shrink: 0;
+    accent-color: #eab308;
+}
+
+.admin-form-gate__label-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-form-gate__status {
+    margin-bottom: 0;
+}

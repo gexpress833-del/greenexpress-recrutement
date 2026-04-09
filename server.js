@@ -1,7 +1,7 @@
 /**
- * API Express + MySQL locale pour les candidatures Green Express.
- * Lancez : npm install && copiez .env.example vers .env, puis npm start
- * Ouvrez : http://localhost:4050/ (port dans .env, défaut 4050)
+ * API Express + PostgreSQL pour les candidatures Green Express.
+ * Render : liez une base Postgres ; DATABASE_URL est injectée automatiquement.
+ * Local : npm install && .env depuis .env.example, puis npm start
  */
 
 require('dotenv').config();
@@ -11,7 +11,7 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const jwt = require('jsonwebtoken');
-const mysql = require('mysql2/promise');
+const { Pool } = require('pg');
 const { streamApplicationPdf } = require('./applicationPdf');
 
 const PORT = Number(process.env.PORT) || 4050;
@@ -26,15 +26,43 @@ if (!fs.existsSync(UPLOAD_APPS)) {
   fs.mkdirSync(UPLOAD_APPS, { recursive: true });
 }
 
-const pool = mysql.createPool({
-  host: process.env.MYSQL_HOST || '127.0.0.1',
-  port: Number(process.env.MYSQL_PORT) || 3306,
-  user: process.env.MYSQL_USER || 'root',
-  password: process.env.MYSQL_PASSWORD || '',
-  database: process.env.MYSQL_DATABASE || 'cv_greenexpress',
-  waitForConnections: true,
-  connectionLimit: 10,
-});
+function sslOptionForDatabaseUrl(url) {
+  if (!url) return false;
+  try {
+    const normalized = url.replace(/^postgresql:/i, 'http:');
+    const u = new URL(normalized);
+    const h = (u.hostname || '').toLowerCase();
+    if (h === 'localhost' || h === '127.0.0.1' || h === '::1') return false;
+  } catch {
+    /* ignore */
+  }
+  return { rejectUnauthorized: false };
+}
+
+function createPool() {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (databaseUrl) {
+    return new Pool({
+      connectionString: databaseUrl,
+      ssl: sslOptionForDatabaseUrl(databaseUrl),
+      max: 10,
+    });
+  }
+  return new Pool({
+    host: process.env.PGHOST || '127.0.0.1',
+    port: Number(process.env.PGPORT) || 5432,
+    user: process.env.PGUSER || 'postgres',
+    password: process.env.PGPASSWORD || '',
+    database: process.env.PGDATABASE || 'cv_greenexpress',
+    max: 10,
+    ssl:
+      String(process.env.PGSSLMODE || '').toLowerCase() === 'require'
+        ? { rejectUnauthorized: false }
+        : false,
+  });
+}
+
+const pool = createPool();
 
 const app = express();
 app.use(cors());
@@ -134,6 +162,36 @@ app.post('/api/admin/login', (req, res) => {
     return res.json({ token });
   }
   return res.status(401).json({ error: 'Identifiants invalides' });
+});
+
+/** État du formulaire public (candidatures ouvertes / fermées par l’admin). */
+app.get('/api/form-status', async (_req, res) => {
+  try {
+    const blocked = await getSubmissionsBlocked();
+    res.json({ submissionsBlocked: blocked });
+  } catch (err) {
+    console.error('form-status', err);
+    res.status(503).json({
+      error: 'Service temporairement indisponible',
+      submissionsBlocked: false,
+    });
+  }
+});
+
+app.put('/api/admin/form-status', authAdmin, async (req, res) => {
+  if (typeof req.body?.blocked !== 'boolean') {
+    return res.status(400).json({ error: 'Corps attendu : { "blocked": true|false }' });
+  }
+  try {
+    await pool.query('UPDATE form_gate SET submissions_blocked = $1 WHERE id = 1', [
+      req.body.blocked,
+    ]);
+    const blocked = await getSubmissionsBlocked();
+    res.json({ submissionsBlocked: blocked });
+  } catch (err) {
+    console.error('admin form-status', err);
+    res.status(500).json({ error: 'Impossible de mettre à jour le statut du formulaire' });
+  }
 });
 
 const storage = multer.diskStorage({
@@ -255,7 +313,7 @@ function rowToClient(row) {
 
 app.get('/api/applications', authAdmin, async (_req, res) => {
   try {
-    const [rows] = await pool.query(
+    const { rows } = await pool.query(
       'SELECT * FROM applications ORDER BY submitted_at DESC'
     );
     res.json({ data: rows.map(rowToClient) });
@@ -270,7 +328,7 @@ async function handleApplicationPdf(req, res, id) {
     return res.status(400).json({ error: 'ID invalide' });
   }
   try {
-    const [rows] = await pool.query('SELECT * FROM applications WHERE id = ? LIMIT 1', [id]);
+    const { rows } = await pool.query('SELECT * FROM applications WHERE id = $1 LIMIT 1', [id]);
     if (!rows.length) {
       return res.status(404).json({ error: 'Candidature introuvable' });
     }
@@ -294,7 +352,20 @@ app.get('/api/application-pdf', authAdmin, async (req, res) => {
   await handleApplicationPdf(req, res, id);
 });
 
-app.post('/api/applications', (req, res, next) => {
+app.post('/api/applications', async (req, res, next) => {
+  try {
+    if (await getSubmissionsBlocked()) {
+      return res.status(403).json({
+        error: 'Les candidatures en ligne sont temporairement fermées.',
+        code: 'FORM_CLOSED',
+      });
+    }
+    next();
+  } catch (err) {
+    console.error('applications gate', err);
+    return res.status(500).json({ error: 'Impossible de vérifier l’ouverture du formulaire' });
+  }
+}, (req, res, next) => {
   uploadFields(req, res, (err) => {
     if (err) {
       if (err instanceof multer.MulterError) {
@@ -392,16 +463,16 @@ app.post('/api/applications', (req, res, next) => {
     address: String(b.address).trim(),
     whatsapp: String(b.whatsapp).trim(),
     email: String(b.email).trim().toLowerCase(),
-    position: JSON.stringify(position),
+    position,
     autre_poste_text: b.autrePosteText ? String(b.autrePosteText).trim() : null,
     availability: String(b.availability),
-    days: JSON.stringify(days),
+    days,
     other_job: String(b.otherJob),
     experience: String(b.experience),
     experience_details: b.experienceDetails ? String(b.experienceDetails).trim() : null,
     skills: String(b.skills).trim(),
     smartphone: String(b.smartphone),
-    languages: JSON.stringify(languages),
+    languages,
     transport: delivery ? String(b.transport) : null,
     license: delivery ? String(b.license) : null,
     weather: delivery ? String(b.weather) : null,
@@ -421,11 +492,63 @@ app.post('/api/applications', (req, res, next) => {
     submitted_at: submittedAt,
   };
 
+  const insertSql = `
+    INSERT INTO applications (
+      full_name, age, gender, address, whatsapp, email,
+      position, autre_poste_text, availability, days, other_job,
+      experience, experience_details, skills, smartphone, languages,
+      transport, license, weather, delivery_zone,
+      motivation, discovery, motto, client_service,
+      postulant_photo_path, card_recto_path, card_verso_path, cv_path, transport_photo_path,
+      signature_name, date_signed, declaration, submitted_at
+    ) VALUES (
+      $1,$2,$3,$4,$5,$6,
+      $7::jsonb,$8,$9,$10::jsonb,$11,
+      $12,$13,$14,$15,$16::jsonb,
+      $17,$18,$19,$20,
+      $21,$22,$23,$24,
+      $25,$26,$27,$28,$29,
+      $30,$31,$32,$33
+    ) RETURNING *`;
+
+  const insertVals = [
+    payload.full_name,
+    payload.age,
+    payload.gender,
+    payload.address,
+    payload.whatsapp,
+    payload.email,
+    payload.position,
+    payload.autre_poste_text,
+    payload.availability,
+    payload.days,
+    payload.other_job,
+    payload.experience,
+    payload.experience_details,
+    payload.skills,
+    payload.smartphone,
+    payload.languages,
+    payload.transport,
+    payload.license,
+    payload.weather,
+    payload.delivery_zone,
+    payload.motivation,
+    payload.discovery,
+    payload.motto,
+    payload.client_service,
+    payload.postulant_photo_path,
+    payload.card_recto_path,
+    payload.card_verso_path,
+    payload.cv_path,
+    payload.transport_photo_path,
+    payload.signature_name,
+    payload.date_signed,
+    payload.declaration,
+    payload.submitted_at,
+  ];
+
   try {
-    const [result] = await pool.query('INSERT INTO applications SET ?', payload);
-    const [rows] = await pool.query('SELECT * FROM applications WHERE id = ?', [
-      result.insertId,
-    ]);
+    const { rows } = await pool.query(insertSql, insertVals);
     res.status(201).json({ data: rowToClient(rows[0]) });
   } catch (err) {
     console.error('insert application', err);
@@ -436,23 +559,23 @@ app.post('/api/applications', (req, res, next) => {
 async function ensureTable() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS applications (
-      id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      id SERIAL PRIMARY KEY,
       full_name VARCHAR(255) NOT NULL,
-      age TINYINT UNSIGNED NULL,
+      age SMALLINT NULL,
       gender VARCHAR(32) NULL,
       address TEXT NULL,
       whatsapp VARCHAR(64) NULL,
       email VARCHAR(255) NULL,
-      position JSON NULL,
+      position JSONB NULL,
       autre_poste_text VARCHAR(255) NULL,
       availability VARCHAR(32) NULL,
-      days JSON NULL,
+      days JSONB NULL,
       other_job VARCHAR(16) NULL,
       experience VARCHAR(16) NULL,
       experience_details TEXT NULL,
       skills TEXT NULL,
       smartphone VARCHAR(16) NULL,
-      languages JSON NULL,
+      languages JSONB NULL,
       transport VARCHAR(32) NULL,
       license VARCHAR(16) NULL,
       weather VARCHAR(16) NULL,
@@ -468,12 +591,36 @@ async function ensureTable() {
       transport_photo_path VARCHAR(512) NULL,
       signature_name VARCHAR(255) NULL,
       date_signed DATE NULL,
-      declaration TINYINT(1) NOT NULL DEFAULT 0,
-      submitted_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-      INDEX idx_submitted (submitted_at),
-      INDEX idx_email (email)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      declaration SMALLINT NOT NULL DEFAULT 0,
+      submitted_at TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
   `);
+  await pool.query(
+    'CREATE INDEX IF NOT EXISTS idx_applications_submitted ON applications (submitted_at DESC)'
+  );
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_applications_email ON applications (email)');
+  await ensureFormGate();
+}
+
+async function ensureFormGate() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS form_gate (
+      id SMALLINT PRIMARY KEY CHECK (id = 1),
+      submissions_blocked BOOLEAN NOT NULL DEFAULT FALSE
+    )
+  `);
+  await pool.query(`
+    INSERT INTO form_gate (id, submissions_blocked) VALUES (1, FALSE)
+    ON CONFLICT (id) DO NOTHING
+  `);
+}
+
+async function getSubmissionsBlocked() {
+  const { rows } = await pool.query(
+    'SELECT submissions_blocked FROM form_gate WHERE id = 1'
+  );
+  if (!rows.length) return false;
+  return Boolean(rows[0].submissions_blocked);
 }
 
 /** Ne jamais servir de fichiers sous /api (sinon 404 silencieux à la place des routes API) */
@@ -522,7 +669,7 @@ app.listen(Number(PORT), '0.0.0.0', async () => {
   try {
     await ensureTable();
   } catch (e) {
-    console.error('MySQL indisponible ou base incorrecte :', e.message);
-    console.error('Vérifiez MYSQL_* dans .env et exécutez schema.sql si besoin.');
+    console.error('PostgreSQL indisponible ou base incorrecte :', e.message);
+    console.error('Vérifiez DATABASE_URL (Render) ou PG* dans .env, et schema.sql si besoin.');
   }
 });

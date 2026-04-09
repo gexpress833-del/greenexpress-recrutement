@@ -1,5 +1,25 @@
 const API_BASE = '';
 
+async function fetchFormSubmissionsBlocked() {
+    try {
+        const res = await fetch(`${API_BASE}/api/form-status`);
+        const j = await res.json().catch(() => ({}));
+        return res.ok && j.submissionsBlocked === true;
+    } catch {
+        return false;
+    }
+}
+
+function applyFormClosedState(form) {
+    const banner = document.getElementById('formClosedBanner');
+    if (banner) banner.classList.remove('hidden');
+    form.dataset.formClosed = '1';
+    form.classList.add('gx-form-root--closed');
+    form.querySelectorAll('input, textarea, select, button').forEach((el) => {
+        el.disabled = true;
+    });
+}
+
 function toggleExperienceDetails() {
     const experienceYes = document.querySelector('input[name="experience"][value="oui"]');
     const experienceDetails = document.getElementById('experienceDetails');
@@ -192,9 +212,13 @@ function initFormStepNavHighlight() {
     steps.forEach((s) => observer.observe(s));
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const form = document.getElementById('recruitmentForm');
     if (!form) return;
+
+    if (await fetchFormSubmissionsBlocked()) {
+        applyFormClosedState(form);
+    }
 
     const previewDefaults = {
         postulant: document.getElementById('postulantPhotoPreview')?.innerHTML || '',
@@ -252,6 +276,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     form.addEventListener('submit', async (e) => {
+        if (form.dataset.formClosed === '1') {
+            e.preventDefault();
+            return;
+        }
+
         clearGroupError(groupErrors.days);
         clearGroupError(groupErrors.positions);
 

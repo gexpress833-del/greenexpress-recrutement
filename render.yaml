@@ -1,6 +1,13 @@
 # Blueprint Render — https://render.com/docs/blueprint-spec
 # Déploiement : Dashboard Render → New → Blueprint → connecter ce dépôt Git.
-# Renseigne les variables marquées sync: false dans l’UI (ou laisse-les vides ici et ajoute-les à la main).
+# La base PostgreSQL est créée avec le Web Service ; DATABASE_URL est injectée automatiquement.
+
+databases:
+  - name: greenexpress-postgres
+    databaseName: cv_greenexpress
+    user: greenexpress
+    plan: free
+    region: frankfurt
 
 services:
   - type: web
@@ -14,17 +21,10 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "20"
-      # Render injecte PORT automatiquement ; ne pas le fixer en dur.
-      - key: MYSQL_HOST
-        sync: false
-      - key: MYSQL_PORT
-        sync: false
-      - key: MYSQL_USER
-        sync: false
-      - key: MYSQL_PASSWORD
-        sync: false
-      - key: MYSQL_DATABASE
-        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: greenexpress-postgres
+          property: connectionString
       - key: JWT_SECRET
         sync: false
       - key: ADMIN_EMAIL
