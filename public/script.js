@@ -152,7 +152,16 @@ async function createApplication(form) {
                     ? `Champs manquants : ${errJson.fields.join(', ')}`
                     : 'Erreur lors de la soumission');
             const hint = typeof errJson.hint === 'string' && errJson.hint.trim() ? errJson.hint.trim() : '';
-            throw new Error(hint ? `${msg}\n\n${hint}` : msg);
+            const dbg = [];
+            if (errJson.pgCode) dbg.push(`Code PostgreSQL : ${errJson.pgCode}`);
+            if (errJson.pgDetail) dbg.push(`Détail : ${errJson.pgDetail}`);
+            if (errJson.pgConstraint) dbg.push(`Contrainte : ${errJson.pgConstraint}`);
+            if (errJson.pgMessage) dbg.push(`Message : ${errJson.pgMessage}`);
+            if (dbg.length) {
+                console.error('[api/applications]', errJson);
+            }
+            const debugBlock = dbg.length ? `\n\n${dbg.join('\n')}` : '';
+            throw new Error(hint ? `${msg}\n\n${hint}${debugBlock}` : `${msg}${debugBlock}`);
         }
         return errJson.data;
     } catch (err) {

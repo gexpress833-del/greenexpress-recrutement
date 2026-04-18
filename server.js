@@ -492,6 +492,12 @@ function mapApplicationInsertError(err) {
   return withDefault(null);
 }
 
+/** Expose des champs PostgreSQL dans la réponse JSON (INSERT) — uniquement en prod + opt-in explicite. */
+function exposeInsertPgDebug() {
+  const g = String(process.env.GX_DEBUG_ERRORS || '').toLowerCase();
+  return process.env.NODE_ENV === 'production' && ['1', 'true', 'yes'].includes(g);
+}
+
 app.get('/api/applications', authAdmin, async (_req, res) => {
   try {
     const { rows } = await pool.query(
@@ -758,7 +764,16 @@ app.post('/api/applications', async (req, res, next) => {
   } catch (err) {
     console.error('insert application', err);
     const mapped = mapApplicationInsertError(err);
-    res.status(500).json({ error: mapped.error, hint: mapped.hint });
+    const body = { error: mapped.error, hint: mapped.hint };
+    if (exposeInsertPgDebug() && err) {
+      body.pgCode = err.code != null ? String(err.code) : null;
+      body.pgSeverity = err.severity != null ? String(err.severity) : null;
+      body.pgDetail = err.detail != null ? String(err.detail) : null;
+      body.pgConstraint = err.constraint != null ? String(err.constraint) : null;
+      body.pgWhere = err.where != null ? String(err.where) : null;
+      body.pgMessage = err.message != null ? String(err.message) : null;
+    }
+    res.status(500).json(body);
   }
 });
 
