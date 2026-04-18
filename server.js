@@ -123,6 +123,65 @@ app.get('/health', (_req, res) => {
   });
 });
 
+/**
+ * Diagnostic DB (Render/local).
+ * Ne renvoie pas de secrets. Utile pour comprendre les 500 lors de /api/applications.
+ */
+app.get('/api/db-check', async (_req, res) => {
+  const started = Date.now();
+  const result = {
+    ok: false,
+    env: {
+      hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
+      hasPgVars: Boolean(process.env.PGHOST || process.env.PGUSER || process.env.PGDATABASE),
+      nodeEnv: process.env.NODE_ENV || null,
+    },
+    db: {
+      connected: false,
+      currentDatabase: null,
+      version: null,
+      tables: { applications: false, form_gate: false },
+      formGateRow: null,
+    },
+    error: null,
+    code: null,
+    ms: 0,
+  };
+
+  try {
+    const r1 = await pool.query('SELECT current_database() AS db, version() AS version');
+    result.db.connected = true;
+    result.db.currentDatabase = r1.rows?.[0]?.db || null;
+    result.db.version = r1.rows?.[0]?.version || null;
+
+    const r2 = await pool.query(
+      `SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename IN ('applications','form_gate')`
+    );
+    const names = new Set((r2.rows || []).map((r) => r.tablename));
+    result.db.tables.applications = names.has('applications');
+    result.db.tables.form_gate = names.has('form_gate');
+
+    if (result.db.tables.form_gate) {
+      const r3 = await pool.query('SELECT id, submissions_blocked FROM form_gate WHERE id = 1');
+      if (r3.rows && r3.rows.length) {
+        result.db.formGateRow = {
+          id: r3.rows[0].id,
+          submissionsBlocked: Boolean(r3.rows[0].submissions_blocked),
+        };
+      }
+    }
+
+    result.ok = result.db.connected && result.db.tables.applications && result.db.tables.form_gate;
+    result.ms = Date.now() - started;
+    return res.status(result.ok ? 200 : 503).json(result);
+  } catch (err) {
+    result.ms = Date.now() - started;
+    result.error = err?.message || String(err);
+    result.code = err?.code || null;
+    return res.status(503).json(result);
+  }
+});
+
 app.get('/admin', (_req, res) => res.redirect(302, '/admin.html'));
 
 app.get('/', (_req, res) => sendPublic(res, 'index.html'));
