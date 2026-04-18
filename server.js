@@ -345,13 +345,19 @@ function normalizeMultiSelectFromBody(val, allowedSet) {
   };
 
   const salvageBraceKey = (s) => {
-    const t = String(s || '').trim();
+    const t = String(s || '')
+      .trim()
+      .replace(/[\u2018\u2019\u201C\u201D]/g, '"');
     const m = /^\{\s*"?([a-z0-9_]+)"?\s*\}$/i.exec(t);
     return m ? m[1].toLowerCase() : null;
   };
 
   const walk = (v) => {
     if (v == null) return;
+    if (typeof Buffer !== 'undefined' && Buffer.isBuffer(v)) {
+      walk(v.toString('utf8'));
+      return;
+    }
     if (Array.isArray(v)) {
       v.forEach(walk);
       return;
@@ -364,7 +370,7 @@ function normalizeMultiSelectFromBody(val, allowedSet) {
       return;
     }
     if (typeof v === 'string') {
-      const s = v.trim();
+      const s = v.trim().replace(/[\u2018\u2019\u201C\u201D]/g, '"');
       if (!s) return;
       if (allowedSet.has(s.toLowerCase())) {
         add(s);
@@ -823,16 +829,16 @@ app.post('/api/applications', async (req, res, next) => {
     payload.address,
     payload.whatsapp,
     payload.email,
-    payload.position,
+    JSON.stringify(Array.isArray(payload.position) ? payload.position : []),
     payload.autre_poste_text,
     payload.availability,
-    payload.days,
+    JSON.stringify(Array.isArray(payload.days) ? payload.days : []),
     payload.other_job,
     payload.experience,
     payload.experience_details,
     payload.skills,
     payload.smartphone,
-    payload.languages,
+    JSON.stringify(Array.isArray(payload.languages) ? payload.languages : []),
     payload.transport,
     payload.license,
     payload.weather,
