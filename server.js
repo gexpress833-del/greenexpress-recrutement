@@ -318,6 +318,88 @@ function parseIsoDateOnly(val) {
   return s;
 }
 
+const POSITION_SLUGS = new Set([
+  'livreur',
+  'cuisinier',
+  'agent_service',
+  'gestionnaire',
+  'community_manager',
+  'autre',
+]);
+
+const DAY_SLUGS = new Set(['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi']);
+
+const LANGUAGE_SLUGS = new Set(['francais', 'lingala', 'anglais', 'swahili']);
+
+/**
+ * Cases à cocher multipart → tableau de slugs autorisés pour JSONB.
+ * Tolère objets { "0": "gestionnaire" } et chaînes JSON invalides type {"gestionnaire"} (sans valeur).
+ */
+function normalizeMultiSelectFromBody(val, allowedSet) {
+  const out = [];
+  const add = (token) => {
+    const s = String(token ?? '')
+      .trim()
+      .toLowerCase();
+    if (s && allowedSet.has(s)) out.push(s);
+  };
+
+  const salvageBraceKey = (s) => {
+    const t = String(s || '').trim();
+    const m = /^\{\s*"?([a-z0-9_]+)"?\s*\}$/i.exec(t);
+    return m ? m[1].toLowerCase() : null;
+  };
+
+  const walk = (v) => {
+    if (v == null) return;
+    if (Array.isArray(v)) {
+      v.forEach(walk);
+      return;
+    }
+    if (typeof v === 'object') {
+      for (const [k, vv] of Object.entries(v)) {
+        add(k);
+        add(vv);
+      }
+      return;
+    }
+    if (typeof v === 'string') {
+      const s = v.trim();
+      if (!s) return;
+      if (allowedSet.has(s.toLowerCase())) {
+        add(s);
+        return;
+      }
+      const salv = salvageBraceKey(s);
+      if (salv) {
+        add(salv);
+        return;
+      }
+      if (s.startsWith('[')) {
+        try {
+          walk(JSON.parse(s));
+        } catch {
+          /* ignore */
+        }
+        return;
+      }
+      if (s.startsWith('{')) {
+        try {
+          walk(JSON.parse(s));
+        } catch {
+          const salv2 = salvageBraceKey(s);
+          if (salv2) add(salv2);
+        }
+        return;
+      }
+    }
+    add(v);
+  };
+
+  walk(val);
+  return [...new Set(out)];
+}
+
 function parseJsonField(val) {
   if (val == null) return null;
   if (typeof val === 'object') return val;
@@ -495,6 +577,11 @@ function mapApplicationInsertError(err) {
   if (code === '23505') {
     return withDefault('Conflit d’enregistrement (doublon). Réessayez ou contactez l’administrateur.');
   }
+  if (code === '22P02') {
+    return withDefault(
+      'Données invalides pour un champ liste (postes, jours ou langues). Réessayez en re-cochant les cases concernées ou en vidant le cache du navigateur.'
+    );
+  }
 
   return withDefault(null);
 }
@@ -595,9 +682,9 @@ app.post('/api/applications', async (req, res, next) => {
   const b = req.body || {};
   const files = req.files || {};
 
-  const position = toArray(b.position);
-  const days = toArray(b.days);
-  const languages = toArray(b.languages);
+  const position = normalizeMultiSelectFromBody(b.position, POSITION_SLUGS);
+  const days = normalizeMultiSelectFromBody(b.days, DAY_SLUGS);
+  const languages = normalizeMultiSelectFromBody(b.languages, LANGUAGE_SLUGS);
 
   const missing = [];
   const need = [
