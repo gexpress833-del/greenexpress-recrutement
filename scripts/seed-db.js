@@ -1,6 +1,6 @@
 /**
  * Applique schema.sql sur la base PostgreSQL (Render, local, etc.).
- * Utilise DATABASE_URL ou PG* depuis .env à la racine du projet.
+ * Utilise DATABASE_URL, DB_URL (alias) ou PG* depuis .env à la racine du projet.
  *
  * Usage : npm run db:seed
  */
@@ -23,8 +23,13 @@ function sslOptionForDatabaseUrl(url) {
   return { rejectUnauthorized: false };
 }
 
+function connectionStringFromEnv() {
+  const u = process.env.DATABASE_URL || process.env.DB_URL;
+  return u ? String(u).trim() : '';
+}
+
 function createPool() {
-  const databaseUrl = process.env.DATABASE_URL;
+  const databaseUrl = connectionStringFromEnv();
   if (databaseUrl) {
     return new Pool({
       connectionString: databaseUrl,
@@ -61,9 +66,9 @@ function stripLineComments(sql) {
 }
 
 async function main() {
-  if (!process.env.DATABASE_URL && !process.env.PGHOST) {
+  if (!process.env.DATABASE_URL && !process.env.DB_URL && !process.env.PGHOST) {
     console.error(
-      'Configurez DATABASE_URL (recommandé pour Render) ou PGHOST/PGUSER/... dans le fichier .env à la racine.'
+      'Configurez DATABASE_URL ou DB_URL (recommandé pour Render) ou PGHOST/PGUSER/... dans le fichier .env à la racine.'
     );
     process.exit(1);
   }

@@ -39,8 +39,14 @@ function sslOptionForDatabaseUrl(url) {
   return { rejectUnauthorized: false };
 }
 
+/** URL complète : DATABASE_URL (Render classique) ou DB_URL (alias toléré). */
+function connectionStringFromEnv() {
+  const u = process.env.DATABASE_URL || process.env.DB_URL;
+  return u ? String(u).trim() : '';
+}
+
 function createPool() {
-  const databaseUrl = process.env.DATABASE_URL;
+  const databaseUrl = connectionStringFromEnv();
   if (databaseUrl) {
     return new Pool({
       connectionString: databaseUrl,
@@ -133,6 +139,7 @@ app.get('/api/db-check', async (_req, res) => {
     ok: false,
     env: {
       hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
+      hasDbUrl: Boolean(process.env.DB_URL),
       hasPgVars: Boolean(process.env.PGHOST || process.env.PGUSER || process.env.PGDATABASE),
       nodeEnv: process.env.NODE_ENV || null,
     },
@@ -417,7 +424,7 @@ function unlinkApplicationRowFiles(row) {
 }
 
 const INSERT_ERROR_HINT_DEFAULT =
-  'Sur Render : Web Service → Environment → DATABASE_URL doit être l’« Internal Database URL » de votre Postgres (ou liaison « Link Database »). Puis Logs : cherchez « insert application » après un envoi. Redéployez après toute modification des variables.';
+  'Sur Render : Web Service → Environment → définissez DATABASE_URL ou DB_URL (même valeur) avec l’« Internal Database URL » de votre Postgres, ou les variables PGHOST/PGUSER/PGPASSWORD/PGDATABASE. Puis Logs : cherchez « insert application » après un envoi. Redéployez après toute modification des variables.';
 
 /** Réponses lisibles pour l’utilisateur du formulaire (sans exposer les détails techniques). */
 function mapApplicationInsertError(err) {
