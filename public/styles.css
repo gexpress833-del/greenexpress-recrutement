@@ -371,6 +371,71 @@ body.gx-page #recruitmentForm .gx-intro-banner {
         0 0 60px rgba(34, 211, 238, 0.06);
 }
 
+/* Logo PNG (fond blanc) : pastille glass pour intégration propre au header */
+.gx-logo-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0.4rem;
+    border-radius: 0.95rem;
+    background: linear-gradient(165deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06));
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    box-shadow:
+        0 8px 28px rgba(0, 0, 0, 0.32),
+        inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.gx-logo-badge__img {
+    display: block;
+    width: 3.15rem;
+    height: 3.15rem;
+    object-fit: contain;
+    border-radius: 0.55rem;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.07);
+}
+
+@media (min-width: 640px) {
+    .gx-logo-badge__img {
+        width: 3.65rem;
+        height: 3.65rem;
+    }
+}
+
+.gx-logo-badge--compact {
+    padding: 0.28rem;
+    border-radius: 0.78rem;
+}
+
+.gx-logo-badge--compact .gx-logo-badge__img {
+    width: 2.45rem;
+    height: 2.45rem;
+}
+
+@media (min-width: 640px) {
+    .gx-logo-badge--compact .gx-logo-badge__img {
+        width: 2.85rem;
+        height: 2.85rem;
+    }
+}
+
+.gx-logo-badge--md {
+    padding: 0.34rem;
+    border-radius: 0.85rem;
+}
+
+.gx-logo-badge--md .gx-logo-badge__img {
+    width: 2.65rem;
+    height: 2.65rem;
+}
+
+@media (min-width: 640px) {
+    .gx-logo-badge--md .gx-logo-badge__img {
+        width: 3.1rem;
+        height: 3.1rem;
+    }
+}
+
 .glass-nav a,
 .glass-nav button {
     transition: color 0.25s var(--ease-out), transform 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out), border-color 0.25s var(--ease-out), background 0.25s var(--ease-out);
@@ -1054,23 +1119,6 @@ body.gx-page #recruitmentForm textarea {
 
 .admin-minw-0 {
     min-width: 0;
-}
-
-.admin-logo-sm,
-.admin-logo-md {
-    flex-shrink: 0;
-    object-fit: contain;
-    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
-}
-
-.admin-logo-sm {
-    width: 3rem;
-    height: 3rem;
-}
-
-.admin-logo-md {
-    width: 3.5rem;
-    height: 3.5rem;
 }
 
 .admin-link-form {
