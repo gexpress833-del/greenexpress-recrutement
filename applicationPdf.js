@@ -3,6 +3,7 @@
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
+const sharp = require('sharp');
 const {
   PDFDocument: PdfLibDocument,
   PDFName,
@@ -74,10 +75,78 @@ function renderList(arr) {
   return String(arr);
 }
 
+/**
+ * Chemins en base : en principe `applications/…`. Tolère slash initial, préfixe `uploads/`,
+ * ou seulement le nom de fichier (legacy).
+ */
+function normalizeStoredUploadPath(rel) {
+  if (rel == null || rel === '') return null;
+  let s = String(rel).trim().replace(/\\/g, '/').replace(/^\/+/, '');
+  if (!s || s.includes('..')) return null;
+  const lower = s.toLowerCase();
+  if (lower.startsWith('uploads/')) {
+    s = s.slice('uploads/'.length).replace(/^\/+/, '');
+  }
+  if (!s.startsWith('applications/')) {
+    if (!s.includes('/')) return `applications/${s}`;
+    return null;
+  }
+  return s;
+}
+
 function diskPath(uploadRoot, rel) {
-  if (!rel) return null;
-  const normalized = String(rel).replace(/\//g, path.sep);
-  return path.join(uploadRoot, normalized);
+  const normalized = normalizeStoredUploadPath(rel);
+  if (!normalized) return null;
+  return path.join(uploadRoot, ...normalized.split('/'));
+}
+
+const PDF_IMAGE_FIELDS = [
+  ['Photo du postulant', 'postulant_photo_path'],
+  ["Carte d'electeur - recto", 'card_recto_path'],
+  ["Carte d'electeur - verso", 'card_verso_path'],
+  ['Photo du moyen de transport', 'transport_photo_path'],
+];
+
+/**
+ * Convertit tout raster courant (WebP, AVIF, HEIC si sharp compilé avec, JPEG, PNG…) en PNG
+ * pour PDFKit, avec limite de taille pour le PDF.
+ */
+async function rasterToPdfImageBuffer(fullPath) {
+  const pipeline = sharp(fullPath).rotate();
+  const meta = await pipeline.metadata();
+  if (!meta.width || !meta.height) return null;
+  const buf = await sharp(fullPath)
+    .rotate()
+    .resize({ width: 1800, height: 1800, fit: 'inside', withoutEnlargement: true })
+    .png({ compressionLevel: 7 })
+    .toBuffer();
+  const m2 = await sharp(buf).metadata();
+  if (!m2.width || !m2.height) return null;
+  return { buffer: buf, width: m2.width, height: m2.height };
+}
+
+async function collectPdfImagePages(row, uploadRoot) {
+  const out = [];
+  for (const [title, key] of PDF_IMAGE_FIELDS) {
+    const full = diskPath(uploadRoot, row[key]);
+    if (!full || !fs.existsSync(full)) continue;
+    try {
+      if (fs.statSync(full).size === 0) continue;
+    } catch {
+      continue;
+    }
+    try {
+      const img = await rasterToPdfImageBuffer(full);
+      if (img) {
+        out.push({ title, ...img });
+      } else {
+        console.warn('[PDF] image non convertie (metadata vide ?)', full);
+      }
+    } catch (e) {
+      console.error('[PDF] image', full, e.message);
+    }
+  }
+  return out;
 }
 
 /**
@@ -218,11 +287,13 @@ async function addFootersToAllPages(pdfBuffer, rowId) {
 /**
  * @returns {Promise<void>}
  */
-function streamApplicationPdf(row, res, uploadRoot) {
+async function streamApplicationPdf(row, res, uploadRoot) {
   const filename = `GreenExpress-candidat-${row.id}.pdf`;
   const cvAbs = diskPath(uploadRoot, row.cv_path);
   const willMergeCvPdf =
     cvAbs && fs.existsSync(cvAbs) && path.extname(cvAbs).toLowerCase() === '.pdf';
+
+  const imagePages = await collectPdfImagePages(row, uploadRoot);
 
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -335,43 +406,26 @@ function streamApplicationPdf(row, res, uploadRoot) {
       addField('Déclaration (informations exactes)', row.declaration ? 'Oui' : 'Non');
       addField('Soumis le', row.submitted_at ? String(row.submitted_at) : null);
 
-      function addImagePage(title, relStored) {
-        const full = diskPath(uploadRoot, relStored);
-        if (!full || !fs.existsSync(full)) return;
-        const ext = path.extname(full).toLowerCase();
-        if (!['.jpg', '.jpeg', '.png', '.gif'].includes(ext)) return;
-        try {
-          if (fs.statSync(full).size === 0) return;
-        } catch {
-          return;
-        }
-
-        let image;
-        try {
-          image = doc.openImage(full);
-        } catch {
-          return;
-        }
-        if (!image || !image.width || !image.height) return;
-
+      for (const img of imagePages) {
         doc.addPage();
         doc.save();
         doc.rect(0, 0, pageW, 52).fill('#0b1220');
-        doc.fillColor('#d4af37').font('Helvetica-Bold').fontSize(11).text(pdfSafe(title), left, 18);
+        doc.fillColor('#d4af37').font('Helvetica-Bold').fontSize(11).text(pdfSafe(img.title), left, 18);
         doc.restore();
 
         const yTop = 62;
         const maxH = Math.max(80, doc.page.height - yTop - 56);
-        const iw = image.width;
-        const ih = image.height;
+        const iw = img.width;
+        const ih = img.height;
         const scale = Math.min(w / iw, maxH / ih);
         const dw = iw * scale;
         const dh = ih * scale;
         const ix = left + (w - dw) / 2;
 
         try {
-          doc.image(full, ix, yTop, { width: dw, height: dh });
-        } catch {
+          doc.image(img.buffer, ix, yTop, { width: dw, height: dh });
+        } catch (e) {
+          console.error('[PDF] doc.image buffer', e.message);
           doc
             .fillColor('#64748b')
             .font('Helvetica')
@@ -379,11 +433,6 @@ function streamApplicationPdf(row, res, uploadRoot) {
             .text(pdfSafe('(Image non integree au PDF.)'), left, yTop, { width: w });
         }
       }
-
-      addImagePage('Photo du postulant', row.postulant_photo_path);
-      addImagePage("Carte d'electeur - recto", row.card_recto_path);
-      addImagePage("Carte d'electeur - verso", row.card_verso_path);
-      addImagePage('Photo du moyen de transport', row.transport_photo_path);
 
       doc.end();
     } catch (err) {

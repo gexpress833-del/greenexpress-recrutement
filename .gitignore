@@ -1,3 +1,7 @@
 node_modules/
 .env
-uploads/
+# Photos / cartes / CV des postulants (contenu ignoré, dossier versionné)
+uploads/*
+!uploads/applications/
+uploads/applications/*
+!uploads/applications/.gitkeep
