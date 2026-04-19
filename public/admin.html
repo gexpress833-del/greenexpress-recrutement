@@ -18,7 +18,7 @@
     <div class="admin-root gx-main-shell">
         <!-- Écran connexion -->
         <div id="adminLoginScreen" class="admin-login-stack">
-            <header class="glass-nav text-white py-5">
+            <header class="glass-nav text-white py-3 sm:py-5">
                 <div class="gx-container gx-container--narrow admin-login-header-inner">
                     <div class="admin-brand-lockup">
                         <span class="gx-logo-badge gx-logo-badge--compact" aria-hidden="true">
@@ -33,7 +33,7 @@
                 </div>
             </header>
             <main class="gx-main-safe admin-login-main">
-                <div class="admin-login-card-wrap gx-login-card admin-login-card-pad">
+                <div class="admin-login-card-wrap gx-login-card gx-card-surface admin-login-card-pad">
                     <h1 class="admin-h1-login font-heading gradient-text">Connexion administrateur</h1>
                     <p class="gx-text-muted admin-intro-login">Accédez à la liste des candidatures.</p>
                     <form id="adminLoginForm" class="admin-form-stack">
@@ -54,7 +54,7 @@
 
         <!-- Tableau de bord -->
         <div id="adminDashboard" class="admin-dashboard hidden">
-            <header class="glass-nav text-white py-5">
+            <header class="glass-nav text-white py-3 sm:py-5">
                 <div class="gx-container admin-dash-header">
                     <div class="admin-dash-brand">
                         <span class="gx-logo-badge gx-logo-badge--md" aria-hidden="true">
@@ -73,7 +73,7 @@
             </header>
 
             <div class="gx-container admin-dash-body">
-                <div class="bg-white/10 backdrop-blur-md rounded-2xl admin-card-pad border border-white/20 shadow-2xl admin-card-surface">
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl admin-card-pad border border-white/20 shadow-2xl admin-card-surface gx-card-surface">
                     <section class="admin-form-gate mb-8 pb-8 border-b border-white/15" aria-labelledby="adminFormGateHeading">
                         <h2 id="adminFormGateHeading" class="admin-form-gate__title font-heading text-white text-lg font-semibold mb-2">Formulaire public</h2>
                         <p class="gx-text-muted text-sm mb-4" id="adminFormGateDesc">Bloquez ou rouvrez les soumissions du formulaire de recrutement (page d’accueil). Quand l’option est activée, le public ne peut plus envoyer de candidature.</p>

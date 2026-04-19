@@ -18,15 +18,17 @@
 
     <div class="relative z-10 gx-main-shell">
         <!-- Header -->
-        <header class="glass-nav text-white py-5 md:py-6">
+        <header class="glass-nav text-white py-3 sm:py-5 md:py-6">
             <div class="gx-container flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div class="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
                     <span class="gx-logo-badge">
                         <img src="/logo.png" alt="Green Express — logo chef et scooter de livraison" class="gx-logo-badge__img" width="64" height="64" decoding="async">
                     </span>
-                    <div class="min-w-0">
-                        <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold gx-nav-title font-heading gx-header-title">Green Express</h1>
-                        <p class="text-sm md:text-base gx-text-muted gx-header-tagline">Rejoignez notre équipe — rapide, sain et délicieux</p>
+                    <div class="min-w-0 flex-1 gx-header-brand">
+                        <div class="gx-header-marquee-inner">
+                            <h1 class="font-bold gx-nav-title font-heading gx-header-title">Green Express</h1>
+                            <p class="text-sm md:text-base gx-text-muted gx-header-tagline">Rejoignez notre équipe — rapide, sain et délicieux</p>
+                        </div>
                     </div>
                 </div>
                 <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto md:flex-shrink-0">
@@ -37,8 +39,8 @@
         </header>
 
         <!-- Formulaire -->
-        <div class="gx-container py-8 md:py-12">
-            <div class="mb-8 gx-intro-banner px-5 py-4">
+        <div class="gx-container py-5 sm:py-8 md:py-12">
+            <div class="mb-6 sm:mb-8 gx-intro-banner gx-card-surface px-3 py-3.5 sm:px-5 sm:py-4">
                 <p class="font-semibold text-white font-heading">Candidature en ligne</p>
                 <p class="text-sm gx-text-muted mt-1">Environ <strong>10 à 15 minutes</strong>, selon les réponses. Les champs marqués <strong>*</strong> sont obligatoires. Vous pouvez revenir en arrière à tout moment.</p>
                 <p class="text-xs gx-text-soft mt-2">Les pièces (photo, carte d’électeur) sont enregistrées de façon sécurisée sur le serveur — formats image courants, <strong>8 Mo maximum</strong> par fichier.</p>
@@ -49,7 +51,7 @@
                 <p class="gx-form-closed-banner__text">Les soumissions en ligne ne sont pas possibles pour le moment. Merci de réessayer ultérieurement.</p>
             </div>
 
-            <nav class="form-step-nav mb-10" aria-label="Étapes du formulaire">
+            <nav class="form-step-nav mb-6 sm:mb-10" aria-label="Étapes du formulaire">
                 <a href="#form-step-1" class="form-step-nav__link">1. Coordonnées</a>
                 <a href="#form-step-2" class="form-step-nav__link">2. Poste &amp; horaires</a>
                 <a href="#form-step-3" class="form-step-nav__link">3. Parcours</a>
@@ -58,7 +60,7 @@
 
             <form id="recruitmentForm" class="space-y-8 gx-form-root">
                 <!-- Section 1: Informations personnelles -->
-                <div id="form-step-1" class="form-step-anchor bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 border border-white/20 shadow-2xl  transition-all duration-300">
+                <div id="form-step-1" class="form-step-anchor bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 gx-card-surface border border-white/20 shadow-2xl transition-all duration-300">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6 gx-card-top min-w-0">
                         <div class="flex items-center gx-section-head">
                             <span class="text-2xl sm:text-3xl mr-2 sm:mr-3 flex-shrink-0" aria-hidden="true">🧍</span>
@@ -106,7 +108,7 @@
 
                 <div id="form-step-2" class="form-step-anchor space-y-8 scroll-mt-24">
                 <!-- Section 2: Poste souhaité -->
-                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 border border-white/20 shadow-2xl  transition-all duration-300">
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 gx-card-surface border border-white/20 shadow-2xl transition-all duration-300">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6 gx-card-top min-w-0">
                         <div class="flex items-center gx-section-head">
                             <span class="text-2xl sm:text-3xl mr-2 sm:mr-3 flex-shrink-0" aria-hidden="true">🚴</span>
@@ -151,14 +153,14 @@
                 </div>
 
                 <!-- Section 3: Disponibilités -->
-                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 border border-white/20 shadow-2xl  transition-all duration-300">
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 gx-card-surface border border-white/20 shadow-2xl transition-all duration-300">
                     <div class="flex items-center gx-section-head mb-6">
                         <span class="text-2xl sm:text-3xl mr-2 sm:mr-3 flex-shrink-0" aria-hidden="true">📅</span>
                         <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-white min-w-0">Disponibilités</h2>
                     </div>
 
                     <!-- Information sur les horaires de Green Express -->
-                    <div class="rounded-xl p-4 mb-6 gx-intro-banner gx-narrow-banner">
+                    <div class="rounded-xl p-4 mb-6 gx-intro-banner gx-narrow-banner gx-card-surface">
                         <div class="flex items-start gap-3 min-w-0">
                             <span class="text-xl sm:text-2xl flex-shrink-0">⏰</span>
                             <div class="min-w-0">
@@ -230,7 +232,7 @@
 
                 <div id="form-step-3" class="form-step-anchor space-y-8 scroll-mt-24">
                 <!-- Section 4: Expérience & compétences -->
-                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 border border-white/20 shadow-2xl  transition-all duration-300">
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 gx-card-surface border border-white/20 shadow-2xl transition-all duration-300">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6 gx-card-top min-w-0">
                         <div class="flex items-center gx-section-head">
                             <span class="text-2xl sm:text-3xl mr-2 sm:mr-3 flex-shrink-0" aria-hidden="true">💪</span>
@@ -305,7 +307,7 @@
                 </div>
 
                 <!-- Section 5: Pour les livreurs -->
-                <div id="deliverySection" class="hidden bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 border border-white/20 shadow-2xl  transition-all duration-300">
+                <div id="deliverySection" class="hidden bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 gx-card-surface border border-white/20 shadow-2xl transition-all duration-300">
                     <div class="flex items-center gx-section-head mb-4">
                         <span class="text-2xl sm:text-3xl mr-2 sm:mr-3 flex-shrink-0" aria-hidden="true">🚲</span>
                         <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-white min-w-0">Si vous postulez comme livreur</h2>
@@ -367,7 +369,7 @@
                 </div>
 
                 <!-- Section 6: Motivation -->
-                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 border border-white/20 shadow-2xl  transition-all duration-300">
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 gx-card-surface border border-white/20 shadow-2xl transition-all duration-300">
                     <div class="flex items-center gx-section-head mb-6">
                         <span class="text-2xl sm:text-3xl mr-2 sm:mr-3 flex-shrink-0" aria-hidden="true">💬</span>
                         <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-white min-w-0">Motivation &amp; valeurs</h2>
@@ -428,7 +430,7 @@
 
                 <div id="form-step-4" class="form-step-anchor space-y-8 scroll-mt-24">
                 <!-- Section 7: Pièces jointes -->
-                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 border border-white/20 shadow-2xl  transition-all duration-300">
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 gx-card-surface border border-white/20 shadow-2xl transition-all duration-300">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6 gx-card-top min-w-0">
                         <div class="flex items-center gx-section-head">
                             <span class="text-2xl sm:text-3xl mr-2 sm:mr-3 flex-shrink-0" aria-hidden="true">📸</span>
@@ -507,7 +509,7 @@
                 </div>
 
                 <!-- Section 8: Déclaration -->
-                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 border border-white/20 shadow-2xl  transition-all duration-300">
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 gx-card-surface border border-white/20 shadow-2xl transition-all duration-300">
                     <div class="flex items-center gx-section-head mb-6">
                         <span class="text-2xl sm:text-3xl mr-2 sm:mr-3 flex-shrink-0" aria-hidden="true">✅</span>
                         <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-white min-w-0">Déclaration &amp; signature</h2>
@@ -534,7 +536,7 @@
                 </div>
 
                 <!-- Boutons -->
-                <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-stretch sm:items-center pb-12">
+                <div class="flex flex-col sm:flex-row gap-3 sm:gap-6 justify-center items-stretch sm:items-center pb-8 sm:pb-12">
                     <button type="reset" class="px-8 py-3 rounded-lg bg-white/10 border border-white/30 text-white font-semibold hover:bg-white/20 transition-all duration-300 cursor-pointer order-2 sm:order-1">
                         Effacer le formulaire
                     </button>
